@@ -25,7 +25,7 @@ public class HouseService {
 	public HouseResponse save(HouseRequest request) {
 		House house=new House();
 		BeanUtils.copyProperties(request, house);
-		house.setQrCodeValue("H-"+ UUID.randomUUID().toString());
+		house.setQrCodeValue("H:"+ request.getHouseNumber());
 		House resp = repo.save(house);
 		HouseResponse response=new HouseResponse();
 		BeanUtils.copyProperties(resp, response);
