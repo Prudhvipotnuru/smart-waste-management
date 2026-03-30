@@ -13,4 +13,8 @@ COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
+<<<<<<< HEAD:dockerFile
 ENTRYPOINT ["java", "-jar", "app.jar"]
+=======
+ENTRYPOINT ["java", "-jar", "swacch-app.jar"]
+>>>>>>> 2eb8cfe7bbc1e24ce7fab641f5c11605078ee657:Dockerfile
