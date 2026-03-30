@@ -62,8 +62,9 @@ button:hover {
 		<h2>Create House</h2>
 
 		<form id="houseForm">
-			<input type="text" id="houseNumber" placeholder="House Number" required>
-			<input type="text" id="ownerName" placeholder="Owner Name" required>
+			<input type="text" id="houseNumber" placeholder="House Number"
+				required> <input type="text" id="ownerName"
+				placeholder="Owner Name" required>
 			<textarea id="address" placeholder="Address" required></textarea>
 			<input type="text" id="ward" placeholder="Ward" required>
 
@@ -74,6 +75,24 @@ button:hover {
 	</div>
 
 	<script>
+	const token = localStorage.getItem("token");
+
+	  if (!token) {
+	    window.location.href = "/login.html";
+	  }
+	  
+	// decode payload
+	  const payload = JSON.parse(atob(token.split('.')[1]));
+
+	  const roles = payload.roles;
+
+	  const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+
+	  if (!isAdmin) {
+	    alert("Access denied");
+	    window.location.href = "/waste.html";
+	  }
+	  
 document.getElementById("houseForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
@@ -83,12 +102,15 @@ document.getElementById("houseForm").addEventListener("submit", async function(e
         address: document.getElementById("address").value,
         ward: document.getElementById("ward").value
     };
+    
+    const token = localStorage.getItem("token");
 
     try {
-        const response = await fetch("/saveHouse", {
+        const response = await fetch("/collector/saveHouse", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
             body: JSON.stringify(data)
         });

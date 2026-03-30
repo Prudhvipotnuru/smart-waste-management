@@ -41,7 +41,7 @@ public class HouseController {
 		this.joblauncher = joblaucher;
 	}
 
-	@PostMapping("/upload")
+	@PostMapping("/admin/upload")
 	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
 	    try {
 	    	if (!file.getOriginalFilename().endsWith(".csv")) {
@@ -102,12 +102,12 @@ public class HouseController {
 	    response.getOutputStream().flush();
 	}
 
-	@PostMapping("/saveHouse")
+	@PostMapping("/collector/saveHouse")
 	private HouseResponse save(@RequestBody HouseRequest request) {
 		return service.save(request);
 	}
 
-	@GetMapping("/houses")
+	@GetMapping("/admin/houses")
 	private List<HouseResponse> getAllHouses() {
 		return service.getAllHouses();
 	}
