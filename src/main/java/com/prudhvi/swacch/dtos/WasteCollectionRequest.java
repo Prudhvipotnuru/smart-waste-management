@@ -14,6 +14,5 @@ public class WasteCollectionRequest {
     private String photoPath;
     private Double latitude;
     private Double longitude;
-    private Long collectorId;
-    private Long houseId;
+    private String houseqr;
 }

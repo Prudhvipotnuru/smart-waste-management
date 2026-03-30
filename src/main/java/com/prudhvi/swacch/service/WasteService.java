@@ -1,10 +1,12 @@
 package com.prudhvi.swacch.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.prudhvi.swacch.dtos.DashBoardResponse;
@@ -53,30 +55,54 @@ public class WasteService {
 		return response;
 	}
 	
-	public WasteCollectionResponse save(WasteCollectionRequest request) {
+	public WasteCollectionResponse save(WasteCollectionRequest request,Authentication auth) {
 		WasteCollection waste=new WasteCollection();
 		BeanUtils.copyProperties(request, waste);
 		
-		Optional<User> user = urepo.findById(request.getCollectorId());
-		if(user.isPresent()) {
-			if(!UserRole.COLLECTOR.equals(user.get().getRole())) {
-				throw new EntityNotFoundException("Role of the User should be Collector");
-			}
-			waste.setCollector(user.get());
-		}else {
-			throw new EntityNotFoundException("User Not Found");
-		}
+		User user = urepo.findByName(auth.getName()).orElseThrow(()->new EntityNotFoundException("User Not Found"));
+		if (!UserRole.COLLECTOR.equals(user.getRole())) {
+	        throw new RuntimeException("Only collectors can add waste");
+	    }
+		waste.setCollector(user);
 		
-		Optional<House> house = hrepo.findById(request.getHouseId());
-		if(house.isPresent()) {
-			waste.setHouse(house.get());
-		}else {
-			throw new EntityNotFoundException("House Not Found");
-		}
+		House house = hrepo.findByQrCodeValue(request.getHouseqr())
+	            .orElseThrow(() -> new EntityNotFoundException("House not found"));
+
+	    waste.setHouse(house);
+	    
+	 // Optional: save photo if provided
+        if (request.getPhotoPath() != null && !request.getPhotoPath().isEmpty()) {
+            String savedPath = savePhoto(request.getPhotoPath(), house.getId());
+            waste.setPhotoPath(savedPath);
+        }
 		
 		WasteCollection resp = wrepo.save(waste);
-		WasteCollectionResponse response = processWasteResponse(resp);
-		return response;
+		return processWasteResponse(resp);
+	}
+	
+	private String savePhoto(String base64Photo, Long houseId){
+	    // Remove "data:image/png;base64," prefix if exists
+	    if (base64Photo.contains(",")) {
+	        base64Photo = base64Photo.split(",")[1];
+	    }
+
+	    byte[] data = java.util.Base64.getDecoder().decode(base64Photo);
+
+	    String dirPath = System.getProperty("user.dir") + "/uploads/photos";
+	    File dir = new File(dirPath);
+	    if (!dir.exists()) dir.mkdirs();
+
+	    String fileName = "house_" + houseId + "_" + System.currentTimeMillis() + ".png";
+	    File file = new File(dir, fileName);
+
+	    try {
+			java.nio.file.Files.write(file.toPath(), data);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	    return "/uploads/photos/" + fileName; // can be used in frontend to show image
 	}
 
 

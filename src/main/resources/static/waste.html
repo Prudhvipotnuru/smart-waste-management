@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Waste Collection</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body class="container mt-4">
+
+<h2 class="mb-3">Waste Collection</h2>
+
+<div id="messageBox"></div>
+
+<button id="startScanBtn" class="btn btn-primary mb-3">Start Scan</button>
+
+<div id="reader" style="width:300px;"></div>
+<p>Scanned House ID: <span id="result">None</span></p>
+
+<!-- Segregation Selection -->
+<div class="mb-3">
+  <label class="form-label">Segregation Status</label>
+  <select id="status" class="form-select">
+    <option value="SEGREGATED">Segregated</option>
+    <option value="NOT_SEGREGATED">Not Segregated</option>
+  </select>
+</div>
+
+<!-- Optional Photo Upload -->
+<div class="mb-3">
+  <label class="form-label">Photo (optional)</label>
+  <input type="file" id="photo" class="form-control" accept="image/*">
+</div>
+
+<button class="btn btn-success" onclick="submitData()">Submit</button>
+
+<script>
+const token = localStorage.getItem("token");
+if (!token) {
+  window.location.href = "/login.html";
+}
+
+//deny access for admin
+const payload = JSON.parse(atob(token.split('.')[1]));
+
+const roles = payload.roles;
+
+const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+
+if (isAdmin) {
+  alert("Access denied");
+  window.location.href = "/uploadFile.html";
+}
+
+let scannedHouseId = null;
+let scanned = false;
+let latitude = null;
+let longitude = null;
+
+// 📸 QR Scan Success
+function onScanSuccess(decodedText) {
+  if (scanned) return;
+  scanned = true;
+  scannedHouseId = decodedText;
+  document.getElementById("result").innerText = decodedText;
+
+  html5QrCode.stop();
+}
+
+const startBtn = document.getElementById("startScanBtn");
+
+startBtn.addEventListener("click", () => {
+    // 📍 Get location
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
+            console.log("Location:", latitude, longitude);
+        },
+        (err) => alert("Could not get location: " + err.message)
+    );
+
+    // 📸 Start QR scanner
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+            if (scanned) return;
+            scanned = true;
+            scannedHouseId = decodedText;
+            document.getElementById("result").innerText = decodedText;
+            html5QrCode.stop();
+        }
+    );
+});
+
+// 📤 Submit data
+async function submitData() {
+  if (!scannedHouseId) {
+    showMessage("Please scan a QR code first", "danger");
+    return;
+  }
+
+  const status = document.getElementById("status").value;
+  const photoInput = document.getElementById("photo");
+  let photoPath = null;
+
+  // Optional: convert photo to base64 for now
+  if (photoInput.files.length > 0) {
+    const file = photoInput.files[0];
+    photoPath = await toBase64(file);
+  }
+
+  const payload = {
+    houseqr: scannedHouseId,
+    segregationStatus: status,
+    photoPath: photoPath,
+    latitude: latitude,
+    longitude: longitude
+  };
+
+  try {
+    const res = await fetch("/collector/save", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-type":"application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to save");
+    }
+
+    showMessage("Waste data saved successfully ✅", "success");
+
+    // Reset for next scan
+    scanned = false;
+    scannedHouseId = null;
+    document.getElementById("result").innerText = "None";
+    document.getElementById("photo").value = null;
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    );
+
+  } catch (err) {
+    showMessage("Error: " + err.message, "danger");
+  }
+}
+
+// Utility: file → base64
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+// 💬 Message UI
+function showMessage(msg, type) {
+  document.getElementById("messageBox").innerHTML =
+    `<div class="alert alert-${type} mt-3">${msg}</div>`;
+}
+</script>
+
+</body>
+</html>

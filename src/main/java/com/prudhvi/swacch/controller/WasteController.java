@@ -2,6 +2,7 @@ package com.prudhvi.swacch.controller;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,9 +23,9 @@ public class WasteController {
 		this.service=service;
 	}
 	
-	@PostMapping("/save")
-	public WasteCollectionResponse save(@RequestBody WasteCollectionRequest waste) {
-		return service.save(waste);
+	@PostMapping("/collector/save")
+	public WasteCollectionResponse save(@RequestBody WasteCollectionRequest waste,Authentication auth) {
+		return service.save(waste,auth);
 	}
 	
 	@GetMapping("/waste")
