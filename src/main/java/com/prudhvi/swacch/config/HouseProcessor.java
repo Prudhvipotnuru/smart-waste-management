@@ -40,7 +40,7 @@ public class HouseProcessor implements ItemProcessor<House, House>{
             house.setError(false);
         }
         if(!house.isError())
-        	house.setQrCodeValue("H-"+ UUID.randomUUID().toString());
+        	house.setQrCodeValue("H-"+ house.getHouseNumber());
 		return house;
 	}
 
