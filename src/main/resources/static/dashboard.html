@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f5f7fa;
+}
+
+/* Navbar */
+.navbar {
+    width: 100%;
+    background-color: #2c3e50;
+}
+
+.navbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.navbar li {
+    flex: 1;
+}
+
+.navbar a {
+    display: block;
+    padding: 15px;
+    text-align: center;
+    color: white;
+    text-decoration: none;
+}
+
+.navbar a:hover {
+    background-color: #1a252f;
+}
+
+/* Page */
+.page {
+    padding: 30px;
+}
+
+/* Heading */
+h2 {
+    text-align: center;
+    color: #2c3e50;
+}
+
+/* Cards Grid */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+/* Card */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Card Titles */
+.card h3 {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+/* Numbers */
+.card p {
+    font-size: 28px;
+    font-weight: bold;
+    color: #27ae60;
+}
+
+/* Message */
+#message {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <ul>
+        <li><a href="createHouse.html">Create House</a></li>
+        <li><a href="uploadFile.html">Upload CSV</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a onclick="logout()">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="page">
+    <h2>Dashboard</h2>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Total Houses</h3>
+            <p id="houseCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Collections</h3>
+            <p id="wasteCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Segregated</h3>
+            <p id="segCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Not Segregated</h3>
+            <p id="nonSegCount">0</p>
+        </div>
+    </div>
+
+    <div id="message"></div>
+</div>
+<script src="js/common.js"></script>
+<script>
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "/";
+}
+
+// restrict collector
+const payload = JSON.parse(atob(token.split('.')[1]));
+const roles = payload.roles;
+
+const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+
+if (!isAdmin) {
+    alert("Access denied");
+    window.location.href = "/collector.html";
+}
+
+// load dashboard
+async function loadDashboard() {
+    try {
+        const res = await fetch("/admin/dashboard", {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        const data = await res.json();
+
+        document.getElementById("houseCount").innerText = data.houseCount;
+        document.getElementById("wasteCount").innerText = data.wasteCount;
+        document.getElementById("segCount").innerText = data.segregatedCount;
+        document.getElementById("nonSegCount").innerText = data.nonSegregatedCount;
+
+    } catch (err) {
+        document.getElementById("message").innerText = "Error loading dashboard";
+    }
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>

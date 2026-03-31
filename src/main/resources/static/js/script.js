@@ -1,7 +1,7 @@
 const token = localStorage.getItem("token");
 
 if (!token) {
-	window.location.href = "/login.html";
+	window.location.href = "/home.html";
 }
 // decode payload
 const payload = JSON.parse(atob(token.split('.')[1]));
@@ -12,7 +12,7 @@ const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
 
 if (!isAdmin) {
 	alert("Access denied");
-	window.location.href = "/createHouse.html";
+	window.location.href = "/waste.html";
 }
 const form = document.getElementById("uploadForm");
 const fileInput = document.getElementById("fileInput");

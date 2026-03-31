@@ -2,21 +2,61 @@
 <html>
 <head>
   <title>Login</title>
+  <style>
+    body {
+      font-family: Arial;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f5f7fa;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
 </head>
+
 <body>
+
+<div class="container">
   <h2>Login</h2>
+
   <form id="loginForm">
     <input type="text" id="username" placeholder="Username" required />
     <input type="password" id="password" placeholder="Password" required />
     <button type="submit">Login</button>
   </form>
+</div>
 
-  <script>
-    const form = document.getElementById('loginForm');
+<script>
+  const form = document.getElementById('loginForm');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
+    try {
       const res = await fetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,14 +66,29 @@
         })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        window.location.href = '/createHouse.html'; // redirect after login
-      } else {
-        alert('Invalid credentials');
+      if (!res.ok) {
+        throw new Error('Invalid credentials');
       }
-    });
-  </script>
+
+      const data = await res.json();
+
+      // Store details
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('userId', data.userId);
+
+      // Role-based redirect
+      if (data.role === 'ADMIN') {
+        window.location.href = '/admin.html';
+      } else if (data.role === 'COLLECTOR') {
+        window.location.href = '/collector.html';
+      }
+
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+</script>
+
 </body>
 </html>

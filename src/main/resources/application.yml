@@ -16,6 +16,9 @@ spring:
   batch:
     job:
       enabled: false
+  mvc:
+    view:
+      suffix: ".html"
 logging:
   level:
     org:

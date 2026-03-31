@@ -2,6 +2,7 @@ package com.prudhvi.swacch.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -128,6 +129,12 @@ public class WasteService {
 		response.setSegregatedCount(wrepo.countBySegregationStatus(SegregationStatus.SEGREGATED));
 		response.setNonSegregatedCount(wrepo.countBySegregationStatus(SegregationStatus.NOT_SEGREGATED));
 		return response;
+	}
+
+	public List<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth) {
+		User user = urepo.findByName(auth.getName()).orElseThrow(()->new EntityNotFoundException("User Not Found"));
+		List<WasteCollection> wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(user.getId(),LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+		return processWasteList(wasteCollections);
 	}
 
 }

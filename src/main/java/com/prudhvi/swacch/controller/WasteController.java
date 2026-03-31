@@ -43,8 +43,13 @@ public class WasteController {
 		return service.getWasteByCollectorId(id);
 	}
 	
-	@GetMapping("/dashboard")
+	@GetMapping("/admin/dashboard")
 	private DashBoardResponse dashboard() {
 		return service.dashboard();
+	}
+	
+	@GetMapping("/collector/history")
+	private List<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth){
+		return service.getWasteByCollectorIdAndCurrentDate(auth);
 	}
 }

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Today Collections</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f5f7fa;
+}
+
+/* Navbar */
+.navbar {
+    width: 100%;
+    background-color: #2c3e50;
+}
+
+.navbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.navbar li {
+    flex: 1;
+}
+
+.navbar a {
+    display: block;
+    padding: 15px;
+    text-align: center;
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.navbar a:hover {
+    background-color: #1a252f;
+}
+
+/* Page */
+.page {
+    padding: 20px;
+}
+
+/* Heading */
+h2 {
+    text-align: center;
+    color: #2c3e50;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #2c3e50;
+    color: white;
+}
+
+/* Status colors */
+.seg {
+    color: green;
+    font-weight: bold;
+}
+
+.non-seg {
+    color: red;
+    font-weight: bold;
+}
+
+/* Image */
+img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+/* Message */
+#message {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+/* Modal background */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    padding-top: 60px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+}
+
+/* Image inside modal */
+.modal-content {
+    display: block;
+    margin: auto;
+    max-width: 80%;
+    max-height: 80%;
+    border-radius: 10px;
+}
+
+/* Close button */
+.close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 35px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <ul>
+        <li><a href="waste.html">Scan</a></li>
+        <li><a href="history.html">Today Records</a></li>
+        <li><a onclick="logout()">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="page">
+    <h2>Today's Collections</h2>
+
+    <table id="table">
+        <thead>
+            <tr>
+                <th>House</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Photo</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div id="message"></div>
+</div>
+
+<!-- Image Popup -->
+<div id="imgModal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="modalImg">
+</div>
+
+<script>
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "/";
+}
+
+// restrict admin
+const payload = JSON.parse(atob(token.split('.')[1]));
+const roles = payload.roles;
+
+const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+
+if (isAdmin) {
+    alert("Access denied");
+    window.location.href = "/dashboard.html";
+}
+
+// Load data
+async function loadData() {
+    try {
+        const res = await fetch("/collector/history", {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        const data = await res.json();
+
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+            document.getElementById("message").innerText = "No records today";
+            return;
+        }
+
+        data.forEach(item => {
+            const row = `
+                <tr>
+                    <td>${item.houseNumber}</td>
+                    <td class="${item.segregationStatus === 'SEGREGATED' ? 'seg' : 'non-seg'}">
+                        ${item.segregationStatus}
+                    </td>
+                    <td>${formatTime(item.collectedAt)}</td>
+                    <td>
+                        ${item.photoPath 
+                            ? `<img src="${item.photoPath}" onclick="openModal(this.src)"	 style="cursor:pointer"/>` 
+                            : "No Photo"}
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+    } catch (err) {
+        document.getElementById("message").innerText = "Error loading data";
+    }
+}
+
+// Format time
+function formatTime(dateTime) {
+    const date = new Date(dateTime);
+    return date.toLocaleTimeString();
+}
+loadData();
+
+function openModal(src) {
+    document.getElementById("imgModal").style.display = "block";
+    document.getElementById("modalImg").src = src;
+}
+
+function closeModal() {
+    document.getElementById("imgModal").style.display = "none";
+}
+</script>
+<script src="js/common.js"></script>
+
+</body>
+</html>

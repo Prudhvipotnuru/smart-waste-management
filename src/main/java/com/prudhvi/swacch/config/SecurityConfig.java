@@ -37,12 +37,16 @@ public class SecurityConfig {
                         .requestMatchers("/login.html",
                         				"/createHouse.html",
                         				"/uploadFile.html",
+                        				"/dashboard.html",
+                        				"/history.html",
                         				"/waste.html",
+                        				"/home.html",
+                        				"/",
                         				"/error",
                         				"/user",
                         				"/login",
                         				"/css/**",
-                                		"/js/**").permitAll()
+                                		"/js/**","/uploads/**").permitAll()
                         //Role-based rules
                         .requestMatchers("/uploadFile.html","/admin/**").hasRole("ADMIN")
                         .requestMatchers("/collector/**").hasRole("COLLECTOR")
