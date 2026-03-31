@@ -10,10 +10,9 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   batch:
     job:
       enabled: false
-  security:
-    user:
-      name: usre
-      password: user
