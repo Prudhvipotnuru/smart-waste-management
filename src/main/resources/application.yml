@@ -16,3 +16,15 @@ spring:
   batch:
     job:
       enabled: false
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql: TRACE
+      springframework: INFO
+    com:
+      prudhvi:
+        swacch: DEBUG
