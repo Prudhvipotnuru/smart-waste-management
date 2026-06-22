@@ -157,7 +157,7 @@ document.getElementById("houseForm").addEventListener("submit", async function(e
     const token = localStorage.getItem("token");
 
     try {
-        const response = await fetch("/collector/saveHouse", {
+        const response = await fetch("/admin/saveHouse", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

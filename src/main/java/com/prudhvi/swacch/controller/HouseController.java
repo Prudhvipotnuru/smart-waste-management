@@ -102,8 +102,8 @@ public class HouseController {
 	    response.getOutputStream().flush();
 	}
 
-	@PostMapping("/collector/saveHouse")
-	private HouseResponse save(@RequestBody HouseRequest request) {
+	@PostMapping("/admin/saveHouse")
+	public HouseResponse save(@RequestBody HouseRequest request) {
 		return service.save(request);
 	}
 

@@ -23,6 +23,7 @@ body {
     margin: 0;
     padding: 0;
     display: flex;
+    gap: 10px;
 }
 
 .navbar li {
@@ -36,10 +37,17 @@ body {
     color: white;
     text-decoration: none;
     cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
 }
 
 .navbar a:hover {
     background-color: #1a252f;
+}
+
+/* Active click feel */
+.navbar a:active {
+    transform: scale(0.95);
 }
 
 /* Page */
