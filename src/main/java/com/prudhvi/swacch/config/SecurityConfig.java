@@ -41,6 +41,7 @@ public class SecurityConfig {
                         				"/history.html",
                         				"/waste.html",
                         				"/home.html",
+                        				"/houseList.html",
                         				"/",
                         				"/error",
                         				"/user",
