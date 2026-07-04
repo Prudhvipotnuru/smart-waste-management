@@ -138,6 +138,63 @@ img {
     font-size: 35px;
     cursor: pointer;
 }
+
+.pageLine {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.pageLine button {
+    padding: 8px 16px;
+    background-color: #2c3e50;     
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.pageLine button:hover {
+    background-color: #1a252f;      
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.pageLine button:active {
+    transform: scale(0.97);        
+    box-shadow: none;
+}
+
+.pageLine button:disabled {
+    background-color: #bdc3c7;     
+    color: #ffffff;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+#statusFilter {
+    background-color: #1a252f;    
+    border-color: #1a252f;
+    color: white;              
+    border: 1px solid #2c3e50;  
+    border-radius: 4px;
+    font-family: Arial, sans-serif; 
+    font-size: 14px; 
+    padding: 4px 8px;
+    cursor: pointer;
+    outline: none;
+}
+
+/* Hover/focus: subtle change, still matching header */
+#statusFilter:hover,
+#statusFilter:focus {
+    background-color: gray;
+    border-color: gray;
+}
 </style>
 </head>
 
@@ -152,20 +209,30 @@ img {
 </nav>
 
 <div class="page">
-    <h2>Today's Collections</h2>
+    <h2>My Collections</h2>
 
     <table id="table">
         <thead>
             <tr>
                 <th>House</th>
-                <th>Status</th>
-                <th>Time</th>
+                <th>
+                <select id="statusFilter" onchange="onStatusChange(this.value)">
+                	<option value="">Status</option>
+                	<option value="SEGREGATED">SEGREGATED</option>
+                	<option value="NOT_SEGREGATED">NOT_SEGREGATED</option>
+                </select>
+                </th>
+                <th>Date and Time</th>
                 <th>Photo</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
-
+    <div class="pageLine">
+    	<button onclick="prevPage()">previous</button>
+	    <p id="pageInfo"></p>
+	    <button onclick="nextPage()">next</button>
+    </div>
     <div id="message"></div>
 </div>
 
@@ -193,22 +260,27 @@ if (isAdmin) {
     window.location.href = "/dashboard.html";
 }
 
+var currentPage=0;
+var pageSize=10;
+let currentStatus="";
 // Load data
 async function loadData() {
     try {
-        const res = await fetch("/collector/history", {
+        const res = await fetch("/collector/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus, {
             headers: {
                 "Authorization": "Bearer " + token
             }
         });
 
-        const data = await res.json();
+        const page = await res.json();
+        const data = page.content;
 
         const tbody = document.getElementById("tableBody");
         tbody.innerHTML = "";
 
         if (data.length === 0) {
             document.getElementById("message").innerText = "No records today";
+            document.getElementById("pageInfo").textContent = "";
             return;
         }
 
@@ -228,7 +300,9 @@ async function loadData() {
                 </tr>
             `;
             tbody.innerHTML += row;
-        });
+        })
+
+        updatePagination(page);
 
     } catch (err) {
         document.getElementById("message").innerText = "Error loading data";
@@ -238,7 +312,7 @@ async function loadData() {
 // Format time
 function formatTime(dateTime) {
     const date = new Date(dateTime);
-    return date.toLocaleTimeString();
+    return date.toLocaleString();
 }
 loadData();
 
@@ -250,6 +324,35 @@ function openModal(src) {
 function closeModal() {
     document.getElementById("imgModal").style.display = "none";
 }
+
+function updatePagination(page) {
+    const info = document.getElementById("pageInfo");
+    info.textContent = `Page ${page.number + 1} of ${page.totalPages}`;
+
+    // optional: store flags
+    window.pageMeta = {
+        first: page.first,
+        last: page.last
+    };
+}
+
+function nextPage() {
+    if (window.pageMeta?.last) return;   // already last page
+    currentPage++;
+    loadData();
+}
+
+function prevPage() {
+    if (currentPage === 0) return;
+    currentPage--;
+    loadData();
+}
+
+function onStatusChange(value){
+	currentStatus = value;
+	currentPage = 0;
+	loadData();
+} 
 </script>
 <script src="js/common.js"></script>
 
