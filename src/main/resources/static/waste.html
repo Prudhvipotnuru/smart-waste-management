@@ -215,6 +215,11 @@ async function submitData() {
     showMessage("Please scan a QR code first", "danger");
     return;
   }
+  
+  if (latitude == null || longitude == null) {
+	showMessage("Location not captured. Please allow location and tap Start Scan again.", "danger");
+	return;
+  }
 
   const status = document.getElementById("status").value;
   const photoInput = document.getElementById("photo");
