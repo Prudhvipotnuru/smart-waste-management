@@ -2,16 +2,15 @@ package com.prudhvi.swacch.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.prudhvi.swacch.dtos.DashBoardResponse;
 import com.prudhvi.swacch.dtos.WasteCollectionRequest;
@@ -138,15 +137,25 @@ public class WasteService {
 	        int size,
 	        //@RequestParam(defaultValue = "collectedAt,desc") String sort,  // e.g. "houseNumber,asc"
 	        String status                   // SEGREGATED / NOT_SEGREGATED
+	        ,String date
 	        ){
 		User user = urepo.findByName(auth.getName()).orElseThrow(()->new EntityNotFoundException("User Not Found"));
 		PageRequest pageable=PageRequest.of(page, size);
 		Page<WasteCollection> wasteCollections;
 		if(status !=null && !status.isBlank()) {
-			wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(user.getId(),pageable,SegregationStatus.valueOf(status));
+			if(date=="") {
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(user.getId(),pageable,SegregationStatus.valueOf(status));
+			}else {
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(user.getId(),pageable,SegregationStatus.valueOf(status),
+						LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+			}
 		}
 		else {
-			wasteCollections = wrepo.findByCollectorId(user.getId(),pageable);
+			if(date=="") {
+				wasteCollections = wrepo.findByCollectorId(user.getId(),pageable);
+			}else {
+				wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(user.getId(),pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+			}
 		}
 		return wasteCollections.map(this::processWasteResponse);
 	}

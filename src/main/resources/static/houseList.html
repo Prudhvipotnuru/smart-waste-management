@@ -136,6 +136,34 @@
         .btn:hover {
             background: #219a52;
         }
+        
+		#button {
+		    display: inline-block;
+		    margin-top: 10px;
+		    margin-bottom: 10px;
+		    padding: 10px 20px;
+		    background-color: #2980b9;
+		    color: #ffffff;
+		    border-radius: 5px;
+		    cursor: pointer;
+		    font-family: Arial, sans-serif;
+		    font-size: 14px;
+		    text-align: center;
+		    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+		    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+		}
+		
+		/* Hover effect */
+		#button:hover {
+		    background-color: #2471a3;      /* slightly darker on hover */
+		    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+		}
+		
+		/* Active (click) effect */
+		#button:active {
+		    transform: scale(0.97);         /* small press animation */
+		    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+		}
     </style>
 </head>
 <body>
@@ -156,6 +184,7 @@
         <div id="loading">Loading houses...</div>
         <div id="message"></div>
 
+		<div id="button" onclick="HideQRCodes(button)">Show QR Codes</div>
         <div class="cards" id="housesContainer">
             <!-- Cards will be inserted here by JavaScript -->
         </div>
@@ -227,7 +256,7 @@
                 }
             });
         }
-
+        
         // Create a house card element
         function createHouseCard(house) {
             const card = document.createElement('div');
@@ -255,15 +284,17 @@
             // Clear any existing QR code
             qrContainer.innerHTML = '';
             
-            // Create new QR code
-            new QRCode(qrContainer, {
-                text: house.qrCodeValue,
-                width: 150,
-                height: 150,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
+            if(flag){
+		        // Create new QR code
+		        new QRCode(qrContainer, {
+		            text: house.qrCodeValue,
+		            width: 150,
+		            height: 150,
+		            colorDark: "#000000",
+		            colorLight: "#ffffff",
+		            correctLevel: QRCode.CorrectLevel.H
+		        });
+            }
         }
 
         // Show message
@@ -281,6 +312,19 @@
 
         // Load houses on page load
         fetchHouses();
+        
+        let flag=false;
+        function HideQRCodes(button){
+        	console.log(button);
+        	if(button.textContent=="Show QR Codes"){
+        		flag=true;
+        		button.textContent="Hide QR Codes";
+        	}else{
+        		flag=false;
+        		button.textContent="Show QR Codes";
+        	}
+        	fetchHouses();
+        }
     </script>
 </body>
 </html>

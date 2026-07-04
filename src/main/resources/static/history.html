@@ -176,7 +176,7 @@ img {
     box-shadow: none;
 }
 
-#statusFilter {
+#statusFilter, #dateFilter {
     background-color: #1a252f;    
     border-color: #1a252f;
     color: white;              
@@ -189,9 +189,10 @@ img {
     outline: none;
 }
 
-/* Hover/focus: subtle change, still matching header */
 #statusFilter:hover,
-#statusFilter:focus {
+#statusFilter:focus,
+#dateFilter:hover,
+#dateFilter:focus {
     background-color: gray;
     border-color: gray;
 }
@@ -222,7 +223,12 @@ img {
                 	<option value="NOT_SEGREGATED">NOT_SEGREGATED</option>
                 </select>
                 </th>
-                <th>Date and Time</th>
+                <th>
+                	<select id="dateFilter" onchange="onDateChange(this.value)">
+                		<option value="">Date and Time</option>
+                		<option value="Today">Today's Records</option>
+                	</select>
+                </th>
                 <th>Photo</th>
             </tr>
         </thead>
@@ -263,10 +269,11 @@ if (isAdmin) {
 var currentPage=0;
 var pageSize=10;
 let currentStatus="";
+let currentDate="";
 // Load data
 async function loadData() {
     try {
-        const res = await fetch("/collector/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus, {
+        const res = await fetch("/collector/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus+"&date="+currentDate, {
             headers: {
                 "Authorization": "Bearer " + token
             }
@@ -353,6 +360,12 @@ function onStatusChange(value){
 	currentPage = 0;
 	loadData();
 } 
+
+function onDateChange(value){
+	currentDate=value;
+	currentPage =0;
+	loadData();
+}
 </script>
 <script src="js/common.js"></script>
 

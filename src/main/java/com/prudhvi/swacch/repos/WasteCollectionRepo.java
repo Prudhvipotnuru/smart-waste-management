@@ -18,11 +18,14 @@ public interface WasteCollectionRepo extends JpaRepository<WasteCollection, Long
 
 	Long countBySegregationStatus(SegregationStatus status);
 
-	List<WasteCollection> findByCollectorIdAndCollectedAtBetween(Long id, LocalDateTime atStartOfDay,
+	Page<WasteCollection> findByCollectorIdAndCollectedAtBetween(Long id, PageRequest pageable, LocalDateTime atStartOfDay,
 			LocalDateTime atStartOfDay2);
 
 	Page<WasteCollection> findByCollectorId(Long id, PageRequest pageable);
 
 	Page<WasteCollection> findByCollectorIdAndSegregationStatus(Long id, PageRequest pageable, SegregationStatus status);
+
+	Page<WasteCollection> findByCollectorIdAndSegregationStatusAndCollectedAtBetween(Long id, PageRequest pageable,
+			SegregationStatus valueOf, LocalDateTime atStartOfDay, LocalDateTime atStartOfDay2);
 
 }

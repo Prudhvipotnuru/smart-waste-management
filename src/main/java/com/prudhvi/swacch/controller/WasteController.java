@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.prudhvi.swacch.dtos.DashBoardResponse;
 import com.prudhvi.swacch.dtos.WasteCollectionRequest;
 import com.prudhvi.swacch.dtos.WasteCollectionResponse;
-import com.prudhvi.swacch.model.WasteCollection;
 import com.prudhvi.swacch.service.WasteService;
 
 @RestController
@@ -53,7 +52,8 @@ public class WasteController {
 	
 	@GetMapping("/collector/history")
 	private Page<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth,@RequestParam(defaultValue = "0") 
-	int page,@RequestParam(defaultValue = "10")int size,@RequestParam(required = false) String status  ){
-		return service.getWasteByCollectorIdAndCurrentDate(auth, page, size, status);
+	int page,@RequestParam(defaultValue = "10")int size,@RequestParam(required = false) String status ,
+	@RequestParam(required=false) String date){
+		return service.getWasteByCollectorIdAndCurrentDate(auth, page, size, status, date);
 	}
 }
