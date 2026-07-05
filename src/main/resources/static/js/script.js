@@ -19,13 +19,25 @@ const fileInput = document.getElementById("fileInput");
 const messageBox = document.getElementById("messageBox");
 const submitBtn = document.getElementById("submitBtn");
 
-form.addEventListener("submit", async function(e) {
+const colForm = document.getElementById("collectorForm");
+const colFileInput = document.getElementById("colFileInput");
+const colMessageBox = document.getElementById("colMessageBox");
+const colSubmitBtn = document.getElementById("colSubmitBtn");
+
+form.addEventListener("submit", (e)=>
+uploadFile(e,fileInput,messageBox,submitBtn,"/admin/upload")
+);
+
+colForm.addEventListener("submit",(e)=>
+uploadFile(e,colFileInput,colMessageBox,colSubmitBtn,"/admin/colUpload")
+);
+async function uploadFile(e,fileInput,messageBox,submitBtn,URL) {
 	e.preventDefault();
 
 	const file = fileInput.files[0];
 
 	if (!file) {
-		showMessage("Please select a file", "danger");
+		showMessage(messageBox,"Please select a file", "danger");
 		return;
 	}
 
@@ -36,7 +48,7 @@ form.addEventListener("submit", async function(e) {
 	submitBtn.innerText = "Uploading...";
 
 	try {
-		const response = await fetch("/admin/upload", {
+		const response = await fetch(URL, {
 			method: "POST",
 			headers: {
 				"Authorization": "Bearer " + token
@@ -47,10 +59,10 @@ form.addEventListener("submit", async function(e) {
 		const data = await response.json();
 
 		if (data.status === "SUCCESS") {
-			showMessage("File processed successfully", "success");
+			showMessage(messageBox,"File processed successfully", "success");
 		}
 		else if (data.status === "COMPLETED_WITH_ERRORS") {
-			showMessage("Completed with errors. Downloading error file...", "warning");
+			showMessage(messageBox,"Completed with errors. Downloading error file...", "warning");
 
 			const btn = document.createElement("button");
 			btn.onclick = () => autoDownload(data.downloadUrl);
@@ -60,7 +72,7 @@ form.addEventListener("submit", async function(e) {
 			messageBox.appendChild(btn);
 		}
 		else if (data.status === "FAILED") {
-			showMessage(data.error || "Job failed", "danger");
+			showMessage(messageBox,data.error || "Job failed", "danger");
 		}
 
 	} catch (error) {
@@ -69,7 +81,7 @@ form.addEventListener("submit", async function(e) {
 		submitBtn.disabled = false;
 		submitBtn.innerText = "Upload";
 	}
-});
+}
 
 async function autoDownload(url) {
 	const token = localStorage.getItem("token");
@@ -101,8 +113,8 @@ async function autoDownload(url) {
 	}
 }
 
-function showMessage(msg, type) {
-	messageBox.innerHTML = `
+function showMessage(box,msg, type) {
+	box.innerHTML = `
     <div class="alert alert-${type}">
       ${msg}
     </div>

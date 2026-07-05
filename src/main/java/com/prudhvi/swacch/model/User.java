@@ -17,6 +17,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -59,4 +60,14 @@ public class User {
 	
 	@OneToMany(mappedBy = "collector",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<WasteCollection> wasteCollections=new ArrayList<WasteCollection>();
+	
+	@Transient
+    private boolean error;
+    @Transient
+    private String errorDesc;
+    @Transient
+    private String tempPassword;
+    
+    @Column(nullable = false)
+    private boolean passwordChanged = false;
 }

@@ -7,11 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.batch.core.job.Job;
-import org.springframework.batch.core.job.parameters.JobParameters;
-import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.prudhvi.swacch.dtos.HouseRequest;
 import com.prudhvi.swacch.dtos.HouseResponse;
 import com.prudhvi.swacch.service.HouseService;
+import com.prudhvi.swacch.utils.UploadUtil;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -34,64 +32,19 @@ public class HouseController {
 
 	private JobOperator jobOperator;
 
-	private Job job;
-
-	public HouseController(HouseService service, JobOperator jobOperator, Job job) {
+	private Job houseImportjob;
+	
+	public HouseController(HouseService service, JobOperator jobOperator,@Qualifier("houseImportJob") Job houseImportjob) {
 		this.service = service;
-		this.job = job;
+		this.houseImportjob = houseImportjob;
 		this.jobOperator = jobOperator;
 	}
 
 	@PostMapping("/admin/upload")
 	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
-	    try {
-	    	if (!file.getOriginalFilename().endsWith(".csv")) {
-	    	    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("status", "FAILED", "error", "Only CSV allowed"));
-	    	}
-	        // Absolute path (inside project folder or anywhere you like)
-	        String uploadDir = System.getProperty("user.dir") + "/uploads";
-
-	        // Create folder if it doesn't exist
-	        File dir = new File(uploadDir);
-	        if (!dir.exists()) {
-	            dir.mkdirs(); // ✅ this creates uploads folder
-	        }
-
-	        // Save file
-	        File dest = new File(dir, file.getOriginalFilename());
-	        file.transferTo(dest);
-
-	        System.out.println("Saved file to: " + dest.getAbsolutePath());
-
-	        // Trigger Spring Batch job
-	        JobParameters params = new JobParametersBuilder()
-	                .addString("filePath", dest.getAbsolutePath())
-	                .addLong("time", System.currentTimeMillis())
-	                .toJobParameters();
-
-	        jobOperator.start(job, params);
-	        
-	        File errorFile = new File(uploadDir + "/error_records.csv");
-	        long headerLength = 59;
-	        if (errorFile.exists() && errorFile.length() > headerLength) {
-	            return ResponseEntity.ok(
-	                    Map.of(
-	                            "status", "COMPLETED_WITH_ERRORS",
-	                            "downloadUrl", "/download-errors"
-	                    )
-	            );
-	        }
-
-	        return ResponseEntity.ok(
-	                Map.of("status", "SUCCESS")
-	        );
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	        		.body(Map.of("status", "FAILED", "error", e.getMessage()));
-	    }
+	    return UploadUtil.uploadProcess(file, jobOperator, houseImportjob, 59);
 	}
-	
+
 	@GetMapping("/download-errors")
 	public void downloadErrors(HttpServletResponse response) throws IOException {
 	    String path = System.getProperty("user.dir") + "/uploads/error_records.csv";

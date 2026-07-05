@@ -6,7 +6,6 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.launch.support.JobOperatorFactoryBean;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -25,7 +24,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
 import com.prudhvi.swacch.model.House;
+import com.prudhvi.swacch.model.User;
 import com.prudhvi.swacch.repos.HouseRepo;
+import com.prudhvi.swacch.repos.UserRepo;
 
 @Configuration
 @EnableBatchProcessing
@@ -33,6 +34,9 @@ public class BatchConfig {
 	
 	@Autowired
 	private HouseRepo hRepo;
+	
+	@Autowired
+	private UserRepo uRepo;
 	
 	// create reader
 	@Bean
@@ -107,7 +111,7 @@ public class BatchConfig {
 	//step
 	
 	@Bean
-	public Step step(JobRepository jobRepository,FlatFileItemReader<House> reader,HouseProcessor processor,
+	public Step housesStep(JobRepository jobRepository,FlatFileItemReader<House> reader,HouseProcessor processor,
 			ClassifierCompositeItemWriter<House> writer,FlatFileItemWriter<House> errorWriter) throws IOException {
 		return new StepBuilder(jobRepository)
 			    .<House, House>chunk(10)
@@ -120,18 +124,98 @@ public class BatchConfig {
 	//job
 	
 	@Bean
-	public Job importUserJob(JobRepository jobRepository, Step step1) {
-	  return new JobBuilder(jobRepository)
-	    .start(step1)
+	public Job houseImportJob(JobRepository jobRepository, Step housesStep) {
+	  return new JobBuilder("HouseImportJob",jobRepository)
+	    .start(housesStep)
 	    .build();
 	}
 	
-	// Job operator Bean creation
 	@Bean
-	public JobOperatorFactoryBean jobOperator(JobRepository jobRepository) {
-		JobOperatorFactoryBean jobOperatorFactoryBean = new JobOperatorFactoryBean();
-		jobOperatorFactoryBean.setJobRepository(jobRepository);
-		return jobOperatorFactoryBean;
+	@StepScope
+	public FlatFileItemReader<User> collectorsReader(@Value("#{jobParameters['filePath']}") String filePath){
+		FlatFileItemReader<User> reader =new FlatFileItemReader<User>(collectorsLineMapper());
+		reader.setLinesToSkip(1);
+		reader.setName("collectors-reader");
+		reader.setStrict(true);
+		reader.setResource(new FileSystemResource(filePath));
+		
+		return reader;
+	}
+	
+	private LineMapper<User> collectorsLineMapper() {
+		DefaultLineMapper<User> lineMapper=new DefaultLineMapper<User>();
+		DelimitedLineTokenizer lineTokenizer=new DelimitedLineTokenizer();
+		lineTokenizer.setDelimiter(",");
+		lineTokenizer.setNames("name","role","phone","email","assigned_area");
+		
+		BeanWrapperFieldSetMapper<User> setMapper=new BeanWrapperFieldSetMapper<User>();
+		setMapper.setTargetType(User.class);
+		
+		lineMapper.setLineTokenizer(lineTokenizer);
+		lineMapper.setFieldSetMapper(setMapper);
+		
+		return lineMapper;
+	}
+	
+	@Bean
+	public CollectorProcessor collectorProcessor() {
+		return new CollectorProcessor();
+	}
+	
+	@Bean
+	public RepositoryItemWriter<User> dbCollectorWriter(){
+		RepositoryItemWriter<User> itemWriter=new RepositoryItemWriter<User>(uRepo);
+		itemWriter.setMethodName("save");
+		return itemWriter;
+	}
+	
+	@Bean
+	public FlatFileItemWriter<User> collectorErrorWriter() {
+	    FlatFileItemWriter<User> writer = new FlatFileItemWriter<User>(item->String.join(",",
+	            item.getName() != null ? item.getName() : "",
+	            item.getRole() != null ? item.getRole().name() : "",
+	            item.getPhone() != null ? item.getPhone() : "",
+	            item.getEmail() != null ? item.getEmail() : "",
+	            item.getAssignedArea() != null ? item.getAssignedArea() : "",
+	            String.valueOf(item.isError()),
+	            item.getErrorDesc() != null ? item.getErrorDesc() : ""
+	    ));
+	    writer.setName("collector-error-writer");
+	    String errorFilePath = System.getProperty("user.dir") + "/uploads/error_records.csv";
+
+	    writer.setResource(new FileSystemResource(errorFilePath));
+	    writer.setHeaderCallback(w -> w.write("name,role,phone,email,assigned_area,error,errorDescription"));
+
+	    return writer;
+	}
+	
+	@Bean
+	public ClassifierCompositeItemWriter<User> collectorCompositeWriter(
+	        RepositoryItemWriter<User> dbCollectorWriter,
+	        FlatFileItemWriter<User> collectorErrorWriter) {
+
+	    ClassifierCompositeItemWriter<User> writer = new ClassifierCompositeItemWriter<>();
+	    writer.setClassifier(item -> item.isError() ? collectorErrorWriter : dbCollectorWriter);
+	    return writer;
+	}
+	
+	@Bean
+	public Step collectorsStep(JobRepository jobRepository,FlatFileItemReader<User> reader,CollectorProcessor processor,
+			ClassifierCompositeItemWriter<User> writer,FlatFileItemWriter<User> errorWriter) throws IOException {
+		return new StepBuilder(jobRepository)
+			    .<User, User>chunk(10)
+			    .reader(reader)
+			    .processor(processor)
+			    .writer(writer)
+			    .stream(errorWriter)   // important: ensure writer is opened
+			    .build();
+	}
+	
+	@Bean
+	public Job collectorImportJob(JobRepository jobRepository, Step collectorsStep) {
+	  return new JobBuilder("CollectorImportJob",jobRepository)
+	    .start(collectorsStep)
+	    .build();
 	}
 }
 
