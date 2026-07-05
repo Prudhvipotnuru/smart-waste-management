@@ -9,7 +9,8 @@ import java.util.Map;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,14 +32,14 @@ public class HouseController {
 
 	private HouseService service;
 
-	private JobLauncher joblauncher;
+	private JobOperator jobOperator;
 
 	private Job job;
 
-	public HouseController(HouseService service, JobLauncher joblaucher, Job job) {
+	public HouseController(HouseService service, JobOperator jobOperator, Job job) {
 		this.service = service;
 		this.job = job;
-		this.joblauncher = joblaucher;
+		this.jobOperator = jobOperator;
 	}
 
 	@PostMapping("/admin/upload")
@@ -68,10 +69,11 @@ public class HouseController {
 	                .addLong("time", System.currentTimeMillis())
 	                .toJobParameters();
 
-	        joblauncher.run(job, params);
+	        jobOperator.start(job, params);
 	        
 	        File errorFile = new File(uploadDir + "/error_records.csv");
-	        if (errorFile.exists() && errorFile.length() > 0) {
+	        long headerLength = 59;
+	        if (errorFile.exists() && errorFile.length() > headerLength) {
 	            return ResponseEntity.ok(
 	                    Map.of(
 	                            "status", "COMPLETED_WITH_ERRORS",

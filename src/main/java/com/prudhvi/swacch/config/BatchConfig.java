@@ -6,6 +6,7 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.JobOperatorFactoryBean;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -106,13 +107,14 @@ public class BatchConfig {
 	//step
 	
 	@Bean
-	public Step step(JobRepository jobRepository,FlatFileItemReader<House> reader,HouseProcessor processor, ClassifierCompositeItemWriter<House> writer,FlatFileItemWriter<House> errorWriter) throws IOException {
+	public Step step(JobRepository jobRepository,FlatFileItemReader<House> reader,HouseProcessor processor,
+			ClassifierCompositeItemWriter<House> writer,FlatFileItemWriter<House> errorWriter) throws IOException {
 		return new StepBuilder(jobRepository)
 			    .<House, House>chunk(10)
 			    .reader(reader)
 			    .processor(processor)
 			    .writer(writer)
-			    .stream(errorWriter)
+			    .stream(errorWriter)   // important: ensure writer is opened
 			    .build();
 	}
 	//job
@@ -122,6 +124,14 @@ public class BatchConfig {
 	  return new JobBuilder(jobRepository)
 	    .start(step1)
 	    .build();
+	}
+	
+	// Job operator Bean creation
+	@Bean
+	public JobOperatorFactoryBean jobOperator(JobRepository jobRepository) {
+		JobOperatorFactoryBean jobOperatorFactoryBean = new JobOperatorFactoryBean();
+		jobOperatorFactoryBean.setJobRepository(jobRepository);
+		return jobOperatorFactoryBean;
 	}
 }
 
