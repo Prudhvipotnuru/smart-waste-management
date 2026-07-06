@@ -45,6 +45,6 @@ public class AuthController {
 
         String token = jwtService.generateToken(userDetails,user.getId());
 
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(new AuthResponse(token, !user.isPasswordChanged()));
     }
 }

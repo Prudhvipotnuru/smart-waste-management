@@ -5,8 +5,11 @@ import lombok.Data;
 @Data
 public class AuthResponse {
     private String token;
+    
+    private boolean mustChangePassword;
 
-    public AuthResponse(String token) {
+    public AuthResponse(String token, boolean mustChangePassword) {
         this.token = token;
+        this.mustChangePassword = mustChangePassword;
     }
 }

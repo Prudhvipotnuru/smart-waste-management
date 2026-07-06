@@ -43,6 +43,7 @@ public class SecurityConfig {
                         				"/waste.html",
                         				"/home.html",
                         				"/houseList.html",
+                        				"/change-password.html",
                         				"/",
                         				"/error",
                         				"/user",

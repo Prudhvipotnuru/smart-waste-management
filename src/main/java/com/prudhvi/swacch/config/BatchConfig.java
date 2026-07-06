@@ -17,14 +17,15 @@ import org.springframework.batch.infrastructure.item.file.mapping.BeanWrapperFie
 import org.springframework.batch.infrastructure.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.infrastructure.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.infrastructure.item.support.ClassifierCompositeItemWriter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.prudhvi.swacch.model.House;
 import com.prudhvi.swacch.model.User;
+import com.prudhvi.swacch.repos.CollectorCredentialRepo;
 import com.prudhvi.swacch.repos.HouseRepo;
 import com.prudhvi.swacch.repos.UserRepo;
 
@@ -32,12 +33,22 @@ import com.prudhvi.swacch.repos.UserRepo;
 @EnableBatchProcessing
 public class BatchConfig {
 	
-	@Autowired
 	private HouseRepo hRepo;
 	
-	@Autowired
 	private UserRepo uRepo;
 	
+	private CollectorCredentialRepo ccRepo;
+	
+	private PasswordEncoder passwordEncoder;
+	
+	public BatchConfig(HouseRepo hRepo, UserRepo uRepo, CollectorCredentialRepo ccRepo,
+			PasswordEncoder passwordEncoder) {
+		this.hRepo = hRepo;
+		this.uRepo = uRepo;
+		this.ccRepo = ccRepo;
+		this.passwordEncoder = passwordEncoder;
+	}
+
 	// create reader
 	@Bean
 	@StepScope
@@ -158,8 +169,10 @@ public class BatchConfig {
 	}
 	
 	@Bean
-	public CollectorProcessor collectorProcessor() {
-		return new CollectorProcessor();
+	@StepScope
+	public CollectorProcessor collectorProcessor(UserRepo uRepo,PasswordEncoder passwordEncoder,
+			CollectorCredentialRepo ccRepo,@Value("#{jobParameters['jobExecutionId']}") Long jobExecutionId) {
+		return new CollectorProcessor(uRepo, passwordEncoder, ccRepo, jobExecutionId);
 	}
 	
 	@Bean

@@ -68,6 +68,6 @@ public class User {
     @Transient
     private String tempPassword;
     
-    @Column
+    @Column(nullable = false)
     private boolean passwordChanged = false;
 }

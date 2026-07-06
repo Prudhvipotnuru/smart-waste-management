@@ -248,11 +248,16 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", isAdmin?"ROLE_ADMIN":"ROLE_COLLECTOR");
         localStorage.setItem("userId", payload.userId);
+        localStorage.setItem('username', document.getElementById('username').value);
         
-        if (isAdmin) {
-            window.location.href = "createHouse.html";
+     // Role-based redirect
+        if(data.mustChangePassword){
+      	// First-time login: redirect to change-password page
+      	  window.location.href = '/change-password.html';
+        } else if (isAdmin) {
+          window.location.href = 'createHouse.html';
         } else {
-            window.location.href = "waste.html";
+          window.location.href = 'waste.html';
         }
 
     } catch (err) {

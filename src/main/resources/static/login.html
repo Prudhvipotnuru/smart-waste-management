@@ -76,9 +76,13 @@
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       localStorage.setItem('userId', data.userId);
+      localStorage.setItem('username', document.getElementById('username').value);
 
       // Role-based redirect
-      if (data.role === 'ADMIN') {
+      if(data.mustChangePassword){
+    	// First-time login: redirect to change-password page
+    	  window.location.href = '/change-password.html';
+      } else if (data.role === 'ADMIN') {
         window.location.href = '/admin.html';
       } else if (data.role === 'COLLECTOR') {
         window.location.href = '/collector.html';

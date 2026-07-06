@@ -36,6 +36,7 @@ public class UploadUtil {
 
 	        // Trigger Spring Batch job
 	        JobParameters params = new JobParametersBuilder()
+	        		.addLong("jobExecutionId",System.currentTimeMillis())
 	                .addString("filePath", dest.getAbsolutePath())
 	                .addLong("time", System.currentTimeMillis())
 	                .toJobParameters();
@@ -48,13 +49,17 @@ public class UploadUtil {
 	            return ResponseEntity.ok(
 	                    Map.of(
 	                            "status", "COMPLETED_WITH_ERRORS",
-	                            "downloadUrl", "/download-errors"
+	                            "downloadUrl", "/download-errors",
+	                            "jobExecution",jobExecution.getStatus().name(),
+		                		"jobExecutionId",String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId"))
 	                    )
 	            );
 	        }
 
 	        return ResponseEntity.ok(
-	                Map.of("status", "SUCCESS","jobExecution",jobExecution.getStatus().name())
+	                Map.of("status", "SUCCESS",
+	                		"jobExecution",jobExecution.getStatus().name(),
+	                		"jobExecutionId",String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId")))
 	        );
 	    } catch (Exception e) {
 	        e.printStackTrace();
