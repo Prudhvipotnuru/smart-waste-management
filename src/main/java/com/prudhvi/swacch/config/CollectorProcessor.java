@@ -2,10 +2,10 @@ package com.prudhvi.swacch.config;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jspecify.annotations.Nullable;
-import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 import com.prudhvi.swacch.model.CollectorCredential;
 import com.prudhvi.swacch.model.User;
@@ -14,6 +14,8 @@ import com.prudhvi.swacch.repos.CollectorCredentialRepo;
 import com.prudhvi.swacch.repos.UserRepo;
 
 public class CollectorProcessor implements ItemProcessor<User,User>{
+	
+	public static final Logger log = LoggerFactory.getLogger(CollectorProcessor.class);
 	
 	private final UserRepo uRepo;
     private final PasswordEncoder passwordEncoder;
@@ -58,7 +60,7 @@ public class CollectorProcessor implements ItemProcessor<User,User>{
             collector.setError(false);
             String password = RandomStringUtils.randomAlphanumeric(8);
         	String hashedPassword=passwordEncoder.encode(password);
-        	System.out.println(password+" Hashed Password: "+hashedPassword);
+        	log.debug(password+" Hashed Password: "+hashedPassword);
         	collector.setPassword(hashedPassword);
         	collector.setTempPassword(password);
         	cRepo.save(new CollectorCredential(

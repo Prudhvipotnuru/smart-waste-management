@@ -2,6 +2,8 @@ package com.prudhvi.swacch.service;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ import com.sendgrid.helpers.mail.objects.Email;
 @Primary
 public class NotificationServiceImplSendGrid implements NotificationService{
 	
+	public static final Logger log = LoggerFactory.getLogger(NotificationServiceImplSendGrid.class);
+	
 	@Value("${sendgrid.api-key}")
     private String sendgridApiKey;
 	
@@ -32,7 +36,7 @@ public class NotificationServiceImplSendGrid implements NotificationService{
         Content content;
         String baseMessage;
         if(tempPassword == null) {
-        baseMessage = "Hi " + name + ",\n\n" +
+        	baseMessage = "Hi " + name + ",\n\n" +
                         "This is a reminder to change your temporary password and set a new one.\n" +
                         "If you already changed it, you can ignore this email.\n\n" ;
         } else {
@@ -56,11 +60,9 @@ public class NotificationServiceImplSendGrid implements NotificationService{
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
             Response response = sg.api(request);
-            System.out.println(response.getStatusCode());
-            System.out.println(response.getBody());
-            System.out.println(response.getHeaders());
+            log.debug(response.getBody());
         } catch (IOException ex) {
-            System.out.println(ex);
+            log.error(ex.getMessage());
         }
     }
 
