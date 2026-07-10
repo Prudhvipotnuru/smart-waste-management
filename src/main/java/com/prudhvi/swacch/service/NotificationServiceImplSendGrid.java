@@ -20,6 +20,9 @@ public class NotificationServiceImplSendGrid implements NotificationService{
 	
 	@Value("${sendgrid.api-key}")
     private String sendgridApiKey;
+	
+	@Value("${swacch.render-link}")
+	private String link;
 
 	@Override
 	public void sendCollectorCredentials(String email, String name, String tempPassword) {
@@ -27,18 +30,23 @@ public class NotificationServiceImplSendGrid implements NotificationService{
         String subject = "Your Swacch collector account details";
         Email to = new Email(email);
         Content content;
+        String baseMessage;
         if(tempPassword == null) {
-        content = new Content("text/plain",
-        		"Hi " + name + ",\n\n" +
+        baseMessage = "Hi " + name + ",\n\n" +
                         "This is a reminder to change your temporary password and set a new one.\n" +
-                        "If you already changed it, you can ignore this email.\n\n" +
-                        "Regards,\nSwacch Admin");
+                        "If you already changed it, you can ignore this email.\n\n" ;
         } else {
-        	content = new Content("text/plain",
-                    "Hi " + name + ",\n\n" +
+        	baseMessage = "Hi " + name + ",\n\n" +
                     "Your temporary password is: " + tempPassword + "\n" +
-                    "Please login and change your password.\n");
+                    "Please login and change your password.\n\n" ;
         }
+        
+        String linkLine =
+                "You can log in here: "+ link +
+                "\n\nRegards,\nSwacch Admin";
+        
+        content=new Content("text/plain",baseMessage+linkLine);
+
         Mail mail = new Mail(from, subject, to, content);
 
         SendGrid sg = new SendGrid(sendgridApiKey);
