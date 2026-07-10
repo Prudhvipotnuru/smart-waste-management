@@ -23,12 +23,12 @@ public class PasswordReminderScheduler {
 
     // Run every day at 9 AM (example)
     //@Scheduled(cron = "0 */5 * * * *")
-    @Scheduled(cron = "0 0 9 * * *")
+    @Scheduled(cron = "0 30 10 * * *")
     public void sendPasswordChangeReminders() {
         List<User> collectors = userRepo.findByRoleAndPasswordChangedFalse(UserRole.COLLECTOR);
 
         for (User c : collectors) {
-            notificationService.sendCollectorCredentialsReminder(
+            notificationService.sendCollectorCredentials(
                     c.getEmail(),
                     c.getName()
             );

@@ -44,3 +44,5 @@ logging:
     com:
       prudhvi:
         swacch: DEBUG
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}

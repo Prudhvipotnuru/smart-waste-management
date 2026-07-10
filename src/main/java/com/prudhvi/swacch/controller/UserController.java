@@ -41,7 +41,8 @@ public class UserController {
 	private PasswordEncoder passwordEncoder;
 	
 	public UserController(JobOperator jobOperator,@Qualifier("collectorImportJob") Job collectorImportJob,
-			NotificationService service, CollectorCredentialRepo cRepo, UserRepo uRepo, PasswordEncoder passwordEncoder) {
+			NotificationService service, CollectorCredentialRepo cRepo, 
+			UserRepo uRepo, PasswordEncoder passwordEncoder) {
 		this.jobOperator = jobOperator;
 		this.collectorImportJob = collectorImportJob;
 		this.notificationService = service;
