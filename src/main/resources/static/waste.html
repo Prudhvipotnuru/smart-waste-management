@@ -248,6 +248,8 @@ async function submitData() {
       },
       body: JSON.stringify(payload)
     });
+    
+    alertAndRelocate(res);
 
     if (!res.ok) {
       throw new Error("Failed to save");

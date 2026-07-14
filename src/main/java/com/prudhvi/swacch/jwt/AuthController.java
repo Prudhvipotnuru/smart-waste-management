@@ -1,31 +1,35 @@
 package com.prudhvi.swacch.jwt;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.prudhvi.swacch.dtos.AppUserDetails;
 import com.prudhvi.swacch.model.User;
 import com.prudhvi.swacch.repos.UserRepo;
+import com.prudhvi.swacch.service.AppUserDetailsService;
 
 @RestController
 public class AuthController {
 
     private final AuthenticationManager authManager;
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final AppUserDetailsService appUserDetailsService;
     private final UserRepo urepo;
+    
+    private static final Logger log=LoggerFactory.getLogger(AuthController.class);
 
     public AuthController(AuthenticationManager authManager,
                           JwtService jwtService,
-                          UserDetailsService userDetailsService,UserRepo urepo) {
+                          AppUserDetailsService appUserDetailsService,UserRepo urepo) {
         this.authManager = authManager;
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
+        this.appUserDetailsService = appUserDetailsService;
 		this.urepo = urepo;
     }
 
@@ -34,16 +38,18 @@ public class AuthController {
 
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        request.getPhone(),
                         request.getPassword()
                 )
         ); 
-        User user=urepo.findByName(request.getUsername()).orElseThrow();
+        User user = urepo.findByPhone(request.getPhone()).orElseThrow();
 
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(request.getUsername());
+        AppUserDetails userDetails =
+        		appUserDetailsService.loadUserByUsername(request.getPhone());
 
-        String token = jwtService.generateToken(userDetails,user.getId());
+        String token = jwtService.generateToken(userDetails,user);
+        
+        log.info(token);
 
         return ResponseEntity.ok(new AuthResponse(token, !user.isPasswordChanged()));
     }

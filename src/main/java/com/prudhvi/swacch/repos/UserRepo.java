@@ -18,4 +18,8 @@ public interface UserRepo extends JpaRepository<User, Long> {
 	boolean existsByEmail(String email);
 
 	List<User> findByRoleAndPasswordChangedFalse(UserRole collector);
+
+	Optional<User> findByEmail(String email);
+
+	Optional<User> findByPhone(String phone);
 }

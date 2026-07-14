@@ -129,7 +129,7 @@ button:hover {
 		<div class="message" id="message"></div>
 	</div>
 	</div>
-
+	<script src="js/common.js"></script>
 	<script>
 	const token = localStorage.getItem("token");
 
@@ -170,6 +170,8 @@ document.getElementById("houseForm").addEventListener("submit", async function(e
             },
             body: JSON.stringify(data)
         });
+        
+        alertAndRelocate(response);
 
         const result = await response.json();
 
@@ -182,7 +184,6 @@ document.getElementById("houseForm").addEventListener("submit", async function(e
     }
 });
 </script>
-<script src="js/common.js"></script>
 
 </body>
 </html>

@@ -36,24 +36,26 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login.html",
-                        				"/createHouse.html",
-                        				"/uploadFile.html",
-                        				"/dashboard.html",
-                        				"/history.html",
-                        				"/waste.html",
                         				"/home.html",
-                        				"/houseList.html",
-                        				"/change-password.html",
                         				"/",
                         				"/error",
                         				"/user",
                         				"/login",
                         				"/css/**",
-                                		"/js/**","/uploads/**").permitAll()
+                                		"/js/**","/uploads/**",
+                       				 	"/createHouse.html",
+                       				 	"/dashboard.html",
+                       				 	"/houseList.html",
+                       				 	"/history.html",
+                       				 	"/waste.html",
+                       				 	"/change-password.html",
+                       				 	"/uploadFile.html").permitAll()
                         //Role-based rules
-                        .requestMatchers("/uploadFile.html","/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/collector/**").hasRole("COLLECTOR")
-                        
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/collector/**"
+                        				).hasRole("COLLECTOR")
+                        .requestMatchers("/change-password").hasAnyRole("ADMIN","COLLECTOR")
+
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(provider())

@@ -4,12 +4,14 @@ import java.io.IOException;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.prudhvi.swacch.dtos.AppUserDetails;
+import com.prudhvi.swacch.service.AppUserDetailsService;
+
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,56 +20,65 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+	private final JwtService jwtService;
+	private final AppUserDetailsService appUserDetailsService;
 
-    public JwtAuthFilter(JwtService jwtService,
-                         UserDetailsService userDetailsService) {
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
-    }
+	public JwtAuthFilter(JwtService jwtService, AppUserDetailsService appUserDetailsService) {
+		this.jwtService = jwtService;
+		this.appUserDetailsService = appUserDetailsService;
+	}
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
+		final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			filterChain.doFilter(request, response);
+			return;
+		}
 
-        String token = authHeader.substring(7);
-        String username = jwtService.extractUsername(token);
+		String token = authHeader.substring(7);
+		String username = null;
+		try {
+			username = jwtService.extractUsername(token);
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+			if (jwtService.mustChangePassword(token) && !request.getRequestURI().contains("change-password")) {
+				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+				response.setContentType("application/json");
+				response.getWriter().write("""
+				    {
+			            "message":"Password change required"
+			        }
+			        """);
+				return;
+			}
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(username);
+			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if (jwtService.isValid(token, userDetails)) {
+				AppUserDetails userDetails = appUserDetailsService.loadUserByUsername(username);
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+				if (jwtService.isValid(token, userDetails)) {
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
+					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+							null, userDetails.getAuthorities());
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authToken);
-            }
-        }
+					authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-        filterChain.doFilter(request, response);
-    }
+					SecurityContextHolder.getContext().setAuthentication(authToken);
+				}
+			}
+		} catch (ExpiredJwtException e) {
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.getWriter().write("""
+				    {
+		            "message":"Session Expired Please Login Again..."
+		        }
+		        """);
+			return;
+		}
+
+		filterChain.doFilter(request, response);
+	}
 }

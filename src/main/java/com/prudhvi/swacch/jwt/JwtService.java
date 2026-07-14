@@ -5,10 +5,13 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.prudhvi.swacch.dtos.AppUserDetails;
+import com.prudhvi.swacch.model.User;
+
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -23,14 +26,17 @@ public class JwtService {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    public String generateToken(UserDetails userDetails, Long userId) {
+    public String generateToken(AppUserDetails userDetails, User user) {
 
         return Jwts.builder()
-                .subject(userDetails.getUsername())
-                .claim("userId",userId)
+                .subject(userDetails.getPhone())
+                .claim("email",userDetails.getEmail())
+                .claim("userName",userDetails.getUsername())
+                .claim("userId",user.getId())
                 .claim("roles", userDetails.getAuthorities())
+                .claim("mustChangePassword", !user.isPasswordChanged())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 600))
                 .signWith(getSignKey())
                 .compact();
     }
@@ -39,15 +45,19 @@ public class JwtService {
         return extractClaims(token).getSubject();
     }
 
-    public boolean isValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isExpired(token);
+    public boolean isValid(String token, AppUserDetails userDetails) {
+        final String phone = extractUsername(token);
+        return phone.equals(userDetails.getPhone()) && !isExpired(token);
     }
 
-    private boolean isExpired(String token) {
+    private boolean isExpired(String token){
         return extractClaims(token).getExpiration().before(new Date());
     }
 
+    public boolean mustChangePassword(String token) {
+    	return (boolean) extractClaims(token).get("mustChangePassword");
+    }
+    
     private Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith((SecretKey) getSignKey())

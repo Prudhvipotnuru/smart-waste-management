@@ -55,6 +55,8 @@ async function uploadFile(e,fileInput,messageBox,submitBtn,URL) {
 			},
 			body: formData
 		});
+		
+		alertAndRelocate(response);
 
 		const data = await response.json();
 
@@ -94,9 +96,7 @@ async function autoDownload(url) {
 			}
 		});
 
-		if (!response.ok) {
-			throw new Error("Download failed");
-		}
+		alertAndRelocate(response);
 
 		const blob = await response.blob();
 

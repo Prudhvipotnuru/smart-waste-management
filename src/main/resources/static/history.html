@@ -248,6 +248,7 @@ img {
     <img class="modal-content" id="modalImg">
 </div>
 
+<script src="js/common.js"></script>
 <script>
 const token = localStorage.getItem("token");
 
@@ -278,6 +279,8 @@ async function loadData() {
                 "Authorization": "Bearer " + token
             }
         });
+        
+        alertAndRelocate(res);
 
         const page = await res.json();
         const data = page.content;
@@ -367,7 +370,6 @@ function onDateChange(value){
 	loadData();
 }
 </script>
-<script src="js/common.js"></script>
 
 </body>
 </html>
