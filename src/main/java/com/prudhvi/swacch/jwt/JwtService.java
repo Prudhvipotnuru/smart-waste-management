@@ -11,7 +11,6 @@ import com.prudhvi.swacch.dtos.AppUserDetails;
 import com.prudhvi.swacch.model.User;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -29,9 +28,9 @@ public class JwtService {
     public String generateToken(AppUserDetails userDetails, User user) {
 
         return Jwts.builder()
-                .subject(userDetails.getPhone())
-                .claim("email",userDetails.getEmail())
-                .claim("userName",userDetails.getUsername())
+                .subject(userDetails.getUsername())
+                .claim("email",user.getEmail())
+                .claim("userName",user.getName())
                 .claim("userId",user.getId())
                 .claim("roles", userDetails.getAuthorities())
                 .claim("mustChangePassword", !user.isPasswordChanged())
@@ -47,7 +46,7 @@ public class JwtService {
 
     public boolean isValid(String token, AppUserDetails userDetails) {
         final String phone = extractUsername(token);
-        return phone.equals(userDetails.getPhone()) && !isExpired(token);
+        return phone.equals(userDetails.getUsername()) && !isExpired(token);
     }
 
     private boolean isExpired(String token){

@@ -1,7 +1,5 @@
 package com.prudhvi.swacch.service;
 
-import java.util.Optional;
-
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -20,12 +18,11 @@ public class AppUserDetailsService implements UserDetailsService {
 	}
 
 	@Override
-	public AppUserDetails loadUserByUsername(String phone) throws UsernameNotFoundException {
-		Optional<User> byName = urepo.findByPhone(phone);
-		if (byName.isEmpty()) {
+	public AppUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		User user = urepo.findByEmailOrName(username,username);
+		if (user==null) {
 			throw new UsernameNotFoundException("User not found");
 		}
-		User user = byName.get();
 		return new AppUserDetails(user);
 	}
 

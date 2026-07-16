@@ -17,14 +17,12 @@ public class AppUserDetails implements UserDetails{
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	private String email;
 	private String password;
 	private String username;
 	private String phone;
 	private String role;
 	
 	public AppUserDetails(User user) {
-		this.email = user.getEmail();
 		this.password = user.getPassword();
 		this.role = user.getRole().name();
 		this.username = user.getName();
@@ -40,10 +38,6 @@ public class AppUserDetails implements UserDetails{
 	@Override
 	public @Nullable String getPassword() {
 		return password;
-	}
-
-	public String getEmail() {
-		return email;
 	}
 
 	@Override

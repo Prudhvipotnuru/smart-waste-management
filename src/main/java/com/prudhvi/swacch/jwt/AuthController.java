@@ -38,14 +38,14 @@ public class AuthController {
 
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getPhone(),
+                        request.getUsername(),
                         request.getPassword()
                 )
         ); 
-        User user = urepo.findByPhone(request.getPhone()).orElseThrow();
+        User user = urepo.findByEmailOrName(request.getUsername(),request.getUsername());
 
         AppUserDetails userDetails =
-        		appUserDetailsService.loadUserByUsername(request.getPhone());
+        		appUserDetailsService.loadUserByUsername(request.getUsername());
 
         String token = jwtService.generateToken(userDetails,user);
         
