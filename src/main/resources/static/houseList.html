@@ -195,6 +195,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="/js/common.js"></script>
     <script>
 	    const token = localStorage.getItem("token");
 	
@@ -224,6 +225,8 @@
                         "Authorization": "Bearer " + token
                     }
                 });
+                
+                alertAndRelocate(response);
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch houses');
