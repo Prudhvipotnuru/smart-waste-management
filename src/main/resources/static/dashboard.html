@@ -116,17 +116,17 @@ h2 {
             <p id="houseCount">0</p>
         </div>
 
-        <div class="card">
+        <div class="card" onclick="collections()">
             <h3>Total Collections</h3>
             <p id="wasteCount">0</p>
         </div>
 
-        <div class="card">
+        <div class="card" onclick="segregated()">
             <h3>Segregated</h3>
             <p id="segCount">0</p>
         </div>
 
-        <div class="card">
+        <div class="card" onclick="notsegregated()">
             <h3>Not Segregated</h3>
             <p id="nonSegCount">0</p>
         </div>
@@ -136,17 +136,11 @@ h2 {
 </div>
 <script src="js/common.js"></script>
 <script>
+verifyUser();
+
 const token = localStorage.getItem("token");
 
-if (!token) {
-    window.location.href = "/";
-}
-
-// restrict collector
-const payload = JSON.parse(atob(token.split('.')[1]));
-const roles = payload.roles;
-
-const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+const isAdmin = localStorage.getItem("isAdmin");
 
 if (!isAdmin) {
     alert("Access denied");
@@ -177,12 +171,22 @@ async function loadDashboard() {
 }
 
 async function houseList(){
-	 /* const res = await fetch("/admin/houseList", {
-         headers: {
-             "Authorization": "Bearer " + token
-         }
-     }); */
 	window.location.href = "/houseList.html";
+}
+
+async function collections(){
+	localStorage.setItem("currentStatus","");
+	window.location.href = "/history.html";
+}
+
+async function segregated(){
+	localStorage.setItem("currentStatus","SEGREGATED");
+	window.location.href = "/history.html";
+}
+
+async function notsegregated(){
+	localStorage.setItem("currentStatus","NOT_SEGREGATED");
+	window.location.href = "/history.html";
 }
 
 loadDashboard();

@@ -109,6 +109,7 @@ button:hover {
             <li><a href="createHouse.html">Create House</a></li>
             <li><a href="uploadFile.html">Upload CSV</a></li>
             <li><a href="dashboard.html">DashBoard</a></li>
+            <li><a href="history.html">All Collections</a></li>
             <li><a onclick="logout()">Logout</a></li>
         </ul>
     </nav>
@@ -131,18 +132,11 @@ button:hover {
 	</div>
 	<script src="js/common.js"></script>
 	<script>
+	verifyUser();
+	
 	const token = localStorage.getItem("token");
-
-	  if (!token) {
-	    window.location.href = "/home.html";
-	  }
-	  
-	// decode payload
-	  const payload = JSON.parse(atob(token.split('.')[1]));
-
-	  const roles = payload.roles;
-
-	  const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+	
+	const isAdmin = localStorage.getItem("isAdmin");
 
 	  if (!isAdmin) {
 	    alert("Access denied");

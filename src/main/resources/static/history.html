@@ -203,14 +203,14 @@ img {
 
 <nav class="navbar">
     <ul>
-        <li><a href="waste.html">Scan</a></li>
-        <li><a href="history.html">Today Records</a></li>
+        <li><a href="waste.html" id="navItem">Scan</a></li>
+        <li onclick="callCollNavItem()"><a href="history.html" id="collNavItem">My Collections</a></li>
         <li><a onclick="logout()">Logout</a></li>
     </ul>
 </nav>
 
 <div class="page">
-    <h2>My Collections</h2>
+    <h2 id="title">My Collections</h2>
 
     <table id="table">
         <thead>
@@ -250,31 +250,36 @@ img {
 
 <script src="js/common.js"></script>
 <script>
+verifyUser();
 const token = localStorage.getItem("token");
 
-if (!token) {
-    window.location.href = "/";
-}
-
-// restrict admin
-const payload = JSON.parse(atob(token.split('.')[1]));
-const roles = payload.roles;
-
-const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
-
-if (isAdmin) {
-    alert("Access denied");
-    window.location.href = "/dashboard.html";
-}
+const isAdmin = localStorage.getItem("isAdmin");
 
 var currentPage=0;
 var pageSize=10;
 let currentStatus="";
 let currentDate="";
+
+if (isAdmin) {
+    const navItem = document.getElementById("navItem");
+    const collNavItem = document.getElementById("collNavItem");
+    const title = document.getElementById("title");
+    navItem.setAttribute("href","/createHouse.html");
+    navItem.innerText="Home"
+    collNavItem.innerText="All Collections";
+    title.innerText="All Collections";
+    if(localStorage.getItem("currentStatus")!=null)
+    	currentStatus=localStorage.getItem("currentStatus");
+}
+
+function callCollNavItem(){
+	localStorage.setItem("currentStatus","");
+}
+
 // Load data
 async function loadData() {
     try {
-        const res = await fetch("/collector/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus+"&date="+currentDate, {
+        const res = await fetch("/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus+"&date="+currentDate, {
             headers: {
                 "Authorization": "Bearer " + token
             }

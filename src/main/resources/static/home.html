@@ -156,7 +156,7 @@ to {
 		<h1>Transforming Waste Management with Technology</h1>
 		<p>Track waste collection, improve segregation, and ensure
 			accountability using a QR-based smart system.</p>
-		<button onclick="openLogin()">Get Started</button>
+		<button onclick="openLogin()" id="getstarted">Get Started</button>
 	</div>
 
 	<!-- Features -->
@@ -197,9 +197,55 @@ to {
 			</form>
 		</div>
 	</div>
-
+<script type="text/javascript" src="js/common.js"></script>
 	<script>
+	
+const token = localStorage.getItem("token");
 
+init();
+async function fetchcall(){
+	const res=await fetch("/check",{
+		method:"GET",
+		headers: {
+			"Authorization" : "Bearer "+token
+		}
+	})
+	return await res;
+}
+async function init(){
+if (token!=null) {
+	const res = await fetchcall();
+	
+	if(!res.ok){
+
+		const getstarted = document.getElementById("getstarted");
+		getstarted.onclick=openLogin;	//alert("Please Login!");
+	}else{
+	
+	const payload = JSON.parse(atob(token.split('.')[1]));
+
+	const roles = payload.roles;
+
+	const role = roles.find(r => r.authority)?.authority || null;
+	localStorage.setItem("role",role);
+	
+	const isAdmin = roles.some(r => r.authority==="ROLE_ADMIN");
+		
+	localStorage.setItem("isAdmin",isAdmin);
+	
+	const getstarted = document.getElementById("getstarted");
+	getstarted.onclick=getStarted;
+}
+}
+}
+const role = localStorage.getItem("role");
+function getStarted(){
+	if(role==="ROLE_ADMIN"){
+		window.location.href="/createHouse.html";
+	} else if(role==="ROLE_COLLECTOR"){
+		window.location.href="/waste.html";
+	}
+}
 // Open modal
 function openLogin() {
     document.getElementById("loginModal").style.display = "block";

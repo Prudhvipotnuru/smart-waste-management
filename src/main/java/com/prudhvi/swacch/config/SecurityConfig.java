@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/login.html",
                         				"/home.html",
                         				"/",
+                        				"/check",
                         				"/error",
                         				"/user",
                         				"/login",
@@ -54,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/collector/**"
                         				).hasRole("COLLECTOR")
-                        .requestMatchers("/change-password").hasAnyRole("ADMIN","COLLECTOR")
+                        .requestMatchers("/change-password","/history").hasAnyRole("ADMIN","COLLECTOR")
 
                         .anyRequest().authenticated()
                 )

@@ -1,14 +1,7 @@
+verifyUser();
 const token = localStorage.getItem("token");
 
-if (!token) {
-	window.location.href = "/home.html";
-}
-// decode payload
-const payload = JSON.parse(atob(token.split('.')[1]));
-
-const roles = payload.roles;
-
-const isAdmin = roles.some(r => r.authority === "ROLE_ADMIN");
+const isAdmin = localStorage.getItem("isAdmin");
 
 if (!isAdmin) {
 	alert("Access denied");
