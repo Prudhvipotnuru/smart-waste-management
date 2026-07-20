@@ -28,4 +28,12 @@ public interface WasteCollectionRepo extends JpaRepository<WasteCollection, Long
 	Page<WasteCollection> findByCollectorIdAndSegregationStatusAndCollectedAtBetween(Long id, PageRequest pageable,
 			SegregationStatus valueOf, LocalDateTime atStartOfDay, LocalDateTime atStartOfDay2);
 
+	Page<WasteCollection> findBySegregationStatus(PageRequest pageable, SegregationStatus valueOf);
+
+	Page<WasteCollection> findBySegregationStatusAndCollectedAtBetween(PageRequest pageable, SegregationStatus valueOf,
+			LocalDateTime atStartOfDay, LocalDateTime atStartOfDay2);
+
+	Page<WasteCollection> findByCollectedAtBetween(PageRequest pageable, LocalDateTime atStartOfDay,
+			LocalDateTime atStartOfDay2);
+
 }

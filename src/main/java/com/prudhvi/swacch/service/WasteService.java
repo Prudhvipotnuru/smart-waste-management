@@ -10,6 +10,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import com.prudhvi.swacch.dtos.DashBoardResponse;
@@ -139,22 +140,50 @@ public class WasteService {
 	        String status                   // SEGREGATED / NOT_SEGREGATED
 	        ,String date
 	        ){
-		User user = urepo.findByName(auth.getName()).orElseThrow(()->new EntityNotFoundException("User Not Found"));
+		if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+			return getAllCollections(auth,page,size,status,date);
+		}
+		Long userId = urepo.findIdByName(auth.getName());
+		if(userId==null) {
+			throw new EntityNotFoundException("User Not Found");
+		}
 		PageRequest pageable=PageRequest.of(page, size);
 		Page<WasteCollection> wasteCollections;
 		if(status !=null && !status.isBlank()) {
 			if(date=="") {
-				wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(user.getId(),pageable,SegregationStatus.valueOf(status));
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(userId,pageable,SegregationStatus.valueOf(status));
 			}else {
-				wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(user.getId(),pageable,SegregationStatus.valueOf(status),
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(userId,pageable,SegregationStatus.valueOf(status),
 						LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
 			}
 		}
 		else {
 			if(date=="") {
-				wasteCollections = wrepo.findByCollectorId(user.getId(),pageable);
+				wasteCollections = wrepo.findByCollectorId(userId,pageable);
 			}else {
-				wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(user.getId(),pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+				wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(userId,pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+			}
+		}
+		return wasteCollections.map(this::processWasteResponse);
+	}
+
+	private Page<WasteCollectionResponse> getAllCollections(Authentication auth, int page, int size, String status,
+			String date) {
+		PageRequest pageable=PageRequest.of(page, size);
+		Page<WasteCollection> wasteCollections;
+		if(status !=null && !status.isBlank()) {
+			if(date=="") {
+				wasteCollections = wrepo.findBySegregationStatus(pageable,SegregationStatus.valueOf(status));
+			}else {
+				wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable,SegregationStatus.valueOf(status),
+						LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+			}
+		}
+		else {
+			if(date=="") {
+				wasteCollections = wrepo.findAll(pageable);
+			}else {
+				wasteCollections = wrepo.findByCollectedAtBetween(pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
 			}
 		}
 		return wasteCollections.map(this::processWasteResponse);

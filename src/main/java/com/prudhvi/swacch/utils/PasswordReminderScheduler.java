@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import com.prudhvi.swacch.model.User;
+import com.prudhvi.swacch.dtos.EmailNameProjection;
 import com.prudhvi.swacch.model.UserRole;
 import com.prudhvi.swacch.repos.UserRepo;
 import com.prudhvi.swacch.service.NotificationService;
@@ -36,7 +36,7 @@ public class PasswordReminderScheduler {
     //@Scheduled(cron = "0 */5 * * * *")
     @Scheduled(cron = "0 0 21 * * *")
     public void sendPasswordChangeReminders() {
-        List<User> collectors = userRepo.findByRoleAndPasswordChangedFalse(UserRole.COLLECTOR);
+        List<EmailNameProjection> collectors = userRepo.findEmailAndNameByRoleAndPasswordChangedFalse(UserRole.COLLECTOR);
         if(CollectionUtils.isEmpty(collectors)) {
         	return;
         }

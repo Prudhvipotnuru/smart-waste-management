@@ -50,7 +50,7 @@ public class WasteController {
 		return service.dashboard();
 	}
 	
-	@GetMapping("/collector/history")
+	@GetMapping("/history")
 	private Page<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth,@RequestParam(defaultValue = "0") 
 	int page,@RequestParam(defaultValue = "10")int size,@RequestParam(required = false) String status ,
 	@RequestParam(required=false) String date){
