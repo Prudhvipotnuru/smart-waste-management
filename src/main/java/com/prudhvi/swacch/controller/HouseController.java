@@ -1,11 +1,9 @@
 package com.prudhvi.swacch.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.coyote.BadRequestException;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,15 +44,8 @@ public class HouseController {
 	}
 
 	@GetMapping("/download-errors")
-	public void downloadErrors(HttpServletResponse response) throws IOException {
-	    String path = System.getProperty("user.dir") + "/uploads/error_records.csv";
-	    File file = new File(path);
-
-	    response.setContentType("text/csv");
-	    response.setHeader("Content-Disposition", "attachment; filename=error_records.csv");
-
-	    Files.copy(file.toPath(), response.getOutputStream());
-	    response.getOutputStream().flush();
+	public ResponseEntity<?> downloadErrors(HttpServletResponse response) throws BadRequestException {
+	    return service.downloadErrors(response);
 	}
 
 	@PostMapping("/admin/saveHouse")
