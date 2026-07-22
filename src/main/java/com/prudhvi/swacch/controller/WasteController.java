@@ -1,11 +1,10 @@
 package com.prudhvi.swacch.controller;
 
-import java.util.List;
-
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,23 +25,8 @@ public class WasteController {
 	}
 	
 	@PostMapping("/collector/save")
-	public WasteCollectionResponse save(@RequestBody WasteCollectionRequest waste,Authentication auth) {
+	public WasteCollectionResponse save(@RequestBody WasteCollectionRequest waste,Authentication auth) throws BadRequestException {
 		return service.save(waste,auth);
-	}
-	
-	@GetMapping("/waste")
-	private List<WasteCollectionResponse> getAll(){
-		return service.getAll();
-	}
-	
-	@GetMapping("/waste/house/{id}")
-	private List<WasteCollectionResponse> getWasteByHouseId(@PathVariable Long id) {
-		return service.getWasteByHouseId(id);
-	}
-	
-	@GetMapping("/waste/collector/{id}")
-	private List<WasteCollectionResponse> getWasteByCollectorId(@PathVariable Long id) {
-		return service.getWasteByCollectorId(id);
 	}
 	
 	@GetMapping("/admin/dashboard")
@@ -53,7 +37,12 @@ public class WasteController {
 	@GetMapping("/history")
 	private Page<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth,@RequestParam(defaultValue = "0") 
 	int page,@RequestParam(defaultValue = "10")int size,@RequestParam(required = false) String status ,
-	@RequestParam(required=false) String date){
-		return service.getWasteByCollectorIdAndCurrentDate(auth, page, size, status, date);
+	@RequestParam(required=false) String date) throws BadRequestException{
+		if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+			return service.getAllCollections(auth,page,size,status,date);
+		}else if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_COLLECTOR"))){
+			return service.getWasteByCollectorIdAndCurrentDate(auth, page, size, status, date);
+		}
+		throw new BadRequestException("Role is neither an ADMIN nor a COLLECTOR!");
 	}
 }

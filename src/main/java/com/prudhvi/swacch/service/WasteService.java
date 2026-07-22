@@ -6,11 +6,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.BeanUtils;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import com.prudhvi.swacch.dtos.DashBoardResponse;
@@ -49,19 +49,26 @@ public class WasteService {
 		return response;
 	}
 	
-	private WasteCollectionResponse processWasteResponse(WasteCollection resp) {
+	private WasteCollectionResponse processWasteResponse(WasteCollection waste) {
 		WasteCollectionResponse response=new WasteCollectionResponse();
-		BeanUtils.copyProperties(resp, response);
-		response.setCollectorId(resp.getCollector().getId());
-		response.setCollectorName(resp.getCollector().getName());
-		response.setHouseId(resp.getHouse().getId());
-		response.setHouseNumber(resp.getHouse().getHouseNumber());
+		response.setCollectedAt(waste.getCollectedAt());
+		response.setCollectorId(waste.getCollector().getId());
+		response.setCollectorName(waste.getCollector().getName());
+		response.setHouseId(waste.getHouse().getId());
+		response.setHouseNumber(waste.getHouse().getHouseNumber());
+		response.setLatitude(waste.getLatitude());
+		response.setLongitude(waste.getLongitude());
+		response.setSegregationStatus(waste.getSegregationStatus());
+		response.setPhotoPath(waste.getPhotoPath());
 		return response;
 	}
 	
-	public WasteCollectionResponse save(WasteCollectionRequest request,Authentication auth) {
+	public WasteCollectionResponse save(WasteCollectionRequest request,Authentication auth) throws BadRequestException {
 		WasteCollection waste=new WasteCollection();
-		BeanUtils.copyProperties(request, waste);
+		waste.setSegregationStatus(request.getSegregationStatus());
+		waste.setPhotoPath(request.getPhotoPath());
+		waste.setLatitude(request.getLatitude());
+		waste.setLongitude(request.getLongitude());
 		
 		User user = urepo.findByName(auth.getName()).orElseThrow(()->new EntityNotFoundException("User Not Found"));
 		if (!UserRole.COLLECTOR.equals(user.getRole())) {
@@ -84,7 +91,7 @@ public class WasteService {
 		return processWasteResponse(resp);
 	}
 	
-	private String savePhoto(String base64Photo, Long houseId){
+	private String savePhoto(String base64Photo, Long houseId) throws BadRequestException{
 	    // Remove "data:image/png;base64," prefix if exists
 	    if (base64Photo.contains(",")) {
 	        base64Photo = base64Photo.split(",")[1];
@@ -102,8 +109,7 @@ public class WasteService {
 	    try {
 			java.nio.file.Files.write(file.toPath(), data);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new BadRequestException("Failed to save Photo",e);
 		}
 
 	    return "/uploads/photos/" + fileName; // can be used in frontend to show image
@@ -139,51 +145,64 @@ public class WasteService {
 	        //@RequestParam(defaultValue = "collectedAt,desc") String sort,  // e.g. "houseNumber,asc"
 	        String status                   // SEGREGATED / NOT_SEGREGATED
 	        ,String date
-	        ){
-		if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-			return getAllCollections(auth,page,size,status,date);
-		}
+	        ) throws BadRequestException{
 		Long userId = urepo.findIdByName(auth.getName());
 		if(userId==null) {
 			throw new EntityNotFoundException("User Not Found");
 		}
 		PageRequest pageable=PageRequest.of(page, size);
 		Page<WasteCollection> wasteCollections;
+		boolean hasDate = date != null && !date.isBlank();
 		if(status !=null && !status.isBlank()) {
-			if(date=="") {
-				wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(userId,pageable,SegregationStatus.valueOf(status));
+			SegregationStatus segStatus;
+			try {
+			    segStatus = SegregationStatus.valueOf(status.toUpperCase());
+			} catch (IllegalArgumentException e) {
+			    throw new BadRequestException("Invalid segregation status");
+			}
+			if(hasDate) {
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(userId,pageable,segStatus);
 			}else {
-				wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(userId,pageable,SegregationStatus.valueOf(status),
-						LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+				wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(userId,pageable,segStatus,
+						LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
 			}
 		}
 		else {
-			if(date=="") {
-				wasteCollections = wrepo.findByCollectorId(userId,pageable);
+			if(hasDate) {
+				wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(userId,pageable,LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
 			}else {
-				wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(userId,pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+				wasteCollections = wrepo.findByCollectorId(userId,pageable);
 			}
 		}
 		return wasteCollections.map(this::processWasteResponse);
 	}
 
-	private Page<WasteCollectionResponse> getAllCollections(Authentication auth, int page, int size, String status,
-			String date) {
+	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	public Page<WasteCollectionResponse> getAllCollections(Authentication auth, int page, int size, String status,
+			String date) throws BadRequestException {
 		PageRequest pageable=PageRequest.of(page, size);
 		Page<WasteCollection> wasteCollections;
+		boolean hasDate = date != null && !date.isBlank();
 		if(status !=null && !status.isBlank()) {
-			if(date=="") {
-				wasteCollections = wrepo.findBySegregationStatus(pageable,SegregationStatus.valueOf(status));
+			SegregationStatus segStatus;
+			try {
+			    segStatus = SegregationStatus.valueOf(status.toUpperCase());
+			} catch (IllegalArgumentException e) {
+			    throw new BadRequestException("Invalid segregation status");
+			}
+			
+			if(hasDate) {
+				wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable,segStatus,
+						LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
 			}else {
-				wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable,SegregationStatus.valueOf(status),
-						LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+				wasteCollections = wrepo.findBySegregationStatus(pageable,segStatus);
 			}
 		}
 		else {
-			if(date=="") {
-				wasteCollections = wrepo.findAll(pageable);
+			if(hasDate) {
+				wasteCollections = wrepo.findByCollectedAtBetween(pageable,LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
 			}else {
-				wasteCollections = wrepo.findByCollectedAtBetween(pageable,LocalDate.now().atStartOfDay(),LocalDate.now().plusDays(1).atStartOfDay());
+				wasteCollections = wrepo.findAll(pageable);
 			}
 		}
 		return wasteCollections.map(this::processWasteResponse);
