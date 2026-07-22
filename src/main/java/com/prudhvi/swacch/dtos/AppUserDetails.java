@@ -21,12 +21,14 @@ public class AppUserDetails implements UserDetails{
 	private String username;
 	private String phone;
 	private String role;
+	private Boolean passwordChanged;
 	
 	public AppUserDetails(User user) {
 		this.password = user.getPassword();
 		this.role = user.getRole().name();
 		this.username = user.getName();
 		this.phone = user.getPhone();
+		this.passwordChanged = user.isPasswordChanged();
 	}
 
 	@Override
@@ -49,4 +51,7 @@ public class AppUserDetails implements UserDetails{
 		return phone;
 	}
 
+	public Boolean isPasswordChanged() {
+		return passwordChanged;
+	}
 }

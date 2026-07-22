@@ -48,3 +48,6 @@ sendgrid:
   api-key: ${SENDGRID_API_KEY}
 swacch:
   render-link: ${SWACCH_RENDER_LINK}
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  expiration: 600000

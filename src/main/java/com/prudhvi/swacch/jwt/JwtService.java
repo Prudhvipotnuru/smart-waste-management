@@ -5,6 +5,7 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.prudhvi.swacch.dtos.AppUserDetails;
@@ -17,9 +18,10 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-    // must be BASE64 encoded and long enough
-    private static final String SECRET_KEY =
-            "prudhvi'ssmartwastemanagementsystem"; 
+	@Value("${jwt.secret}")
+    private String SECRET_KEY;
+	@Value("${jwt.expiration}")
+	private long expiration;
 
     private Key getSignKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
@@ -33,9 +35,8 @@ public class JwtService {
                 .claim("userName",user.getName())
                 .claim("userId",user.getId())
                 .claim("roles", userDetails.getAuthorities())
-                .claim("mustChangePassword", !user.isPasswordChanged())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 600))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignKey())
                 .compact();
     }
@@ -53,10 +54,6 @@ public class JwtService {
         return extractClaims(token).getExpiration().before(new Date());
     }
 
-    public boolean mustChangePassword(String token) {
-    	return (boolean) extractClaims(token).get("mustChangePassword");
-    }
-    
     private Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith((SecretKey) getSignKey())

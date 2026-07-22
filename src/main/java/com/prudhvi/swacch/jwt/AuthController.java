@@ -1,7 +1,5 @@
 package com.prudhvi.swacch.jwt;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,8 +20,6 @@ public class AuthController {
     private final AppUserDetailsService appUserDetailsService;
     private final UserRepo urepo;
     
-    private static final Logger log=LoggerFactory.getLogger(AuthController.class);
-
     public AuthController(AuthenticationManager authManager,
                           JwtService jwtService,
                           AppUserDetailsService appUserDetailsService,UserRepo urepo) {
@@ -49,8 +45,6 @@ public class AuthController {
 
         String token = jwtService.generateToken(userDetails,user);
         
-        log.info(token);
-
         return ResponseEntity.ok(new AuthResponse(token, !user.isPasswordChanged()));
     }
 }

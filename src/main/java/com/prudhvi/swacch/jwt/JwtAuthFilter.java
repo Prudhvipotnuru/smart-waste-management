@@ -43,8 +43,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 		String username = null;
 		try {
 			username = jwtService.extractUsername(token);
+			AppUserDetails userDetails = appUserDetailsService.loadUserByUsername(username);
 
-			if (jwtService.mustChangePassword(token) && !request.getRequestURI().contains("change-password")) {
+			if (!userDetails.isPasswordChanged() && !request.getRequestURI().contains("change-password")) {
 				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 				response.setContentType("application/json");
 				response.getWriter().write("""
@@ -57,7 +58,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-				AppUserDetails userDetails = appUserDetailsService.loadUserByUsername(username);
 
 				if (jwtService.isValid(token, userDetails)) {
 
