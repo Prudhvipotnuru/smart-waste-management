@@ -197,7 +197,7 @@
     <!-- JavaScript -->
     <script src="/js/common.js"></script>
     <script>
-    const isAdmin = localStorage.getItem("isAdmin");
+    const isAdmin = localStorage.getItem("isAdmin")==="true";
     const token = localStorage.getItem("token");
     
 	    if (!isAdmin) {

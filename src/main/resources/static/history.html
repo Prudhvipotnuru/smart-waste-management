@@ -226,7 +226,7 @@ img {
                 <th>
                 	<select id="dateFilter" onchange="onDateChange(this.value)">
                 		<option value="">Date and Time</option>
-                		<option value="Today">Today's Records</option>
+                		<option value="" id="todayOption">Today's Records</option>
                 	</select>
                 </th>
                 <th>Photo</th>
@@ -253,12 +253,15 @@ img {
 verifyUser();
 const token = localStorage.getItem("token");
 
-const isAdmin = localStorage.getItem("isAdmin");
+const isAdmin = localStorage.getItem("isAdmin")==="true";
 
 var currentPage=0;
 var pageSize=10;
 let currentStatus="";
 let currentDate="";
+
+const today = new Date().toISOString().split('T')[0]; // "2026-07-22"
+document.getElementById('todayOption').value = today;
 
 if (isAdmin) {
     const navItem = document.getElementById("navItem");

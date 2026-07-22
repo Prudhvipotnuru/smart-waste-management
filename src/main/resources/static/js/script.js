@@ -1,7 +1,7 @@
 verifyUser();
 const token = localStorage.getItem("token");
 
-const isAdmin = localStorage.getItem("isAdmin");
+const isAdmin = localStorage.getItem("isAdmin")==="true";
 
 if (!isAdmin) {
 	alert("Access denied");
