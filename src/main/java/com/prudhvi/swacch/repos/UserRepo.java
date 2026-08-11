@@ -6,13 +6,11 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.prudhvi.swacch.dtos.EmailNameProjection;
 import com.prudhvi.swacch.model.User;
 import com.prudhvi.swacch.model.UserRole;
 
-@RepositoryRestResource(path = "user")
 public interface UserRepo extends JpaRepository<User, Long> {
 	Optional<User> findByName(String name);
 

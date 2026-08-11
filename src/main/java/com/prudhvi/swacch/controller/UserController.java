@@ -16,6 +16,8 @@ import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,23 +38,23 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 public class UserController {
-	
+
 	public static final Logger log = LoggerFactory.getLogger(UserController.class);
-	
+
 	private JobOperator jobOperator;
 
 	private Job collectorImportJob;
-	
+
 	private NotificationService notificationService;
-	
+
 	private CollectorCredentialRepo cRepo;
-	
+
 	private UserRepo uRepo;
-	
+
 	private PasswordEncoder passwordEncoder;
-	
-	public UserController(JobOperator jobOperator,@Qualifier("collectorImportJob") Job collectorImportJob,
-			NotificationService service, CollectorCredentialRepo cRepo, 
+
+	public UserController(JobOperator jobOperator, @Qualifier("collectorImportJob") Job collectorImportJob,
+			NotificationService service, CollectorCredentialRepo cRepo,
 			UserRepo uRepo, PasswordEncoder passwordEncoder) {
 		this.jobOperator = jobOperator;
 		this.collectorImportJob = collectorImportJob;
@@ -63,61 +65,65 @@ public class UserController {
 	}
 
 	@PostMapping("/admin/colUpload")
-	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
-	    ResponseEntity<Map<String, String>> status = UploadUtil.uploadProcess(file, jobOperator, collectorImportJob, 60);
+	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file,
+			HttpServletResponse response) {
+		ResponseEntity<Map<String, String>> status = UploadUtil.uploadProcess(file, jobOperator, collectorImportJob,
+				60);
 		Map<String, String> body = status.getBody();
-	    if(body != null && BatchStatus.COMPLETED.name().equals(body.get("jobExecution"))) {
-	    	Long jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
-	        List<CollectorCredential> newCollectors = cRepo.findByJobExecutionId(jobExecutionId);
-	        if(CollectionUtils.isEmpty(newCollectors)) {
-	        	return status;
-	        }
-	        ExecutorService executor = Executors.newFixedThreadPool(5);
+		if (body != null && BatchStatus.COMPLETED.name().equals(body.get("jobExecution"))) {
+			Long jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
+			List<CollectorCredential> newCollectors = cRepo.findByJobExecutionId(jobExecutionId);
+			if (CollectionUtils.isEmpty(newCollectors)) {
+				return status;
+			}
+			ExecutorService executor = Executors.newFixedThreadPool(5);
 
-	        long start=System.currentTimeMillis();
-	        List<?> list = newCollectors.stream()
-	        		.map(c -> executor.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(), c.getName(), c.getPassword())))
-	        		.toList();
-	        int failures=0;
-	        for(Object f:list) {
-	        	try {
-	                ((Future<?>) f).get(30, TimeUnit.SECONDS); // surfaces exceptions, bounds wait time
-	            } catch (ExecutionException e) {
-	                failures++;
-	                log.error("Failed to send credentials email", e.getCause());
-	            } catch (TimeoutException e) {
-	                failures++;
-	                log.error("Timed out sending credentials email", e);
-	            } catch (InterruptedException e) {
-	                Thread.currentThread().interrupt();
-	                log.error("Interrupted while sending emails", e);
-	                break;
-	            }
-	        }
-	        long end = System.currentTimeMillis();
-	        log.info("{} ms total time to send mails to {} collectors ({} failures)",
-	                (end - start), newCollectors.size(), failures);
-	        
-	        executor.shutdown();
-	    }
-	    cRepo.deleteAll();
-	    return status;
+			long start = System.currentTimeMillis();
+			List<?> list = newCollectors.stream()
+					.map(c -> executor.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(),
+							c.getName(), c.getPassword())))
+					.toList();
+			int failures = 0;
+			for (Object f : list) {
+				try {
+					((Future<?>) f).get(30, TimeUnit.SECONDS); // surfaces exceptions, bounds wait time
+				} catch (ExecutionException e) {
+					failures++;
+					log.error("Failed to send credentials email", e.getCause());
+				} catch (TimeoutException e) {
+					failures++;
+					log.error("Timed out sending credentials email", e);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					log.error("Interrupted while sending emails", e);
+					break;
+				}
+			}
+			long end = System.currentTimeMillis();
+			log.info("{} ms total time to send mails to {} collectors ({} failures)",
+					(end - start), newCollectors.size(), failures);
+
+			executor.shutdown();
+		}
+		cRepo.deleteAll();
+		return status;
 	}
-	
+
+	@PreAuthorize("#req.userId == authentication.principal.userId")
 	@PostMapping("/change-password")
-	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest req) {
+	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest req, Authentication auth) {
 
-        User user = uRepo.findById(req.getUserId()).orElseThrow();
+		User user = uRepo.findById(req.getUserId()).orElseThrow();
 
-        if (!req.getNewPassword().equals(req.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("Passwords did not match");
-        }
+		if (!req.getNewPassword().equals(req.getConfirmPassword())) {
+			return ResponseEntity.badRequest().body("Passwords did not match");
+		}
 
-        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
-        user.setPasswordChanged(true);
+		user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+		user.setPasswordChanged(true);
 
-        uRepo.save(user);
+		uRepo.save(user);
 
-        return ResponseEntity.ok("Password updated");
-    }
+		return ResponseEntity.ok("Password updated");
+	}
 }

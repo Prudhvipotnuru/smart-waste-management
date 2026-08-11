@@ -22,6 +22,7 @@ public class AppUserDetails implements UserDetails{
 	private String phone;
 	private String role;
 	private Boolean passwordChanged;
+	private Long userId;
 	
 	public AppUserDetails(User user) {
 		this.password = user.getPassword();
@@ -29,6 +30,7 @@ public class AppUserDetails implements UserDetails{
 		this.username = user.getName();
 		this.phone = user.getPhone();
 		this.passwordChanged = user.isPasswordChanged();
+		this.userId = user.getId();
 	}
 
 	@Override
