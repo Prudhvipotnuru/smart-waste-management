@@ -176,7 +176,7 @@ img {
     box-shadow: none;
 }
 
-#statusFilter, #dateFilter {
+#statusFilter, #dateFilter, #collectorFilter {
     background-color: #1a252f;    
     border-color: #1a252f;
     color: white;              
@@ -192,7 +192,9 @@ img {
 #statusFilter:hover,
 #statusFilter:focus,
 #dateFilter:hover,
-#dateFilter:focus {
+#dateFilter:focus,
+#collectorFilter:hover,
+#collectorFilter:focus {
     background-color: gray;
     border-color: gray;
 }
@@ -216,7 +218,11 @@ img {
         <thead>
             <tr>
                 <th>House</th>
-                <th id="collectorHeader" style="display: none;">Collector</th>
+                <th id="collectorHeader" style="display: none;">
+                    <select id="collectorFilter" onchange="onCollectorChange(this.value)">
+                        <option value="">Collector (All)</option>
+                    </select>
+                </th>
                 <th>
                 <select id="statusFilter" onchange="onStatusChange(this.value)">
                 	<option value="">Status</option>
@@ -260,6 +266,7 @@ var currentPage=0;
 var pageSize=10;
 let currentStatus="";
 let currentDate="";
+let currentCollectorId="";
 
 const today = new Date().toISOString().split('T')[0]; // "2026-07-22"
 document.getElementById('todayOption').value = today;
@@ -275,9 +282,36 @@ if (isAdmin) {
     title.innerText="All Collections";
     if (collectorHeader) {
         collectorHeader.style.display = "";
+        loadCollectors();
     }
     if(localStorage.getItem("currentStatus")!=null)
     	currentStatus=localStorage.getItem("currentStatus");
+}
+
+async function loadCollectors() {
+    try {
+        const res = await fetch("/admin/collectors", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+            const collectors = await res.json();
+            const select = document.getElementById("collectorFilter");
+            collectors.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Failed to load collectors", e);
+    }
+}
+
+function onCollectorChange(value) {
+    currentCollectorId = value;
+    currentPage = 0;
+    loadData();
 }
 
 function callCollNavItem(){
@@ -287,7 +321,7 @@ function callCollNavItem(){
 // Load data
 async function loadData() {
     try {
-        const res = await fetch("/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus+"&date="+currentDate, {
+        const res = await fetch("/history?page="+currentPage+"&size="+pageSize+"&status="+currentStatus+"&date="+currentDate+"&collectorId="+currentCollectorId, {
             headers: {
                 "Authorization": "Bearer " + token
             }

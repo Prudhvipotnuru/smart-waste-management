@@ -40,4 +40,6 @@ public interface UserRepo extends JpaRepository<User, Long> {
 			AND passwordChanged = false
 			""")
 	List<EmailNameProjection> findEmailAndNameByRoleAndPasswordChangedFalse(@Param("role") UserRole collector);
+
+	List<User> findByRole(UserRole role);
 }

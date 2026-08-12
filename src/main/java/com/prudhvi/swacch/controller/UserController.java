@@ -20,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.prudhvi.swacch.dtos.ChangePasswordRequest;
 import com.prudhvi.swacch.model.CollectorCredential;
 import com.prudhvi.swacch.model.User;
+import com.prudhvi.swacch.model.UserRole;
 import com.prudhvi.swacch.repos.CollectorCredentialRepo;
 import com.prudhvi.swacch.repos.UserRepo;
 import com.prudhvi.swacch.service.NotificationService;
@@ -79,8 +81,9 @@ public class UserController {
 					try {
 						long start = System.currentTimeMillis();
 						List<?> list = newCollectors.stream()
-								.map(c -> executor.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(),
-										c.getName(), c.getPassword())))
+								.map(c -> executor
+										.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(),
+												c.getName(), c.getPassword())))
 								.toList();
 						int failures = 0;
 						for (Object f : list) {
@@ -128,5 +131,15 @@ public class UserController {
 		uRepo.save(user);
 
 		return ResponseEntity.ok("Password updated");
+	}
+
+	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@GetMapping("/admin/collectors")
+	public ResponseEntity<List<Map<String, Object>>> getCollectors() {
+		List<User> collectors = uRepo.findByRole(UserRole.COLLECTOR);
+		List<Map<String, Object>> result = collectors.stream()
+				.map(u -> Map.<String, Object>of("id", u.getId(), "name", u.getName()))
+				.toList();
+		return ResponseEntity.ok(result);
 	}
 }

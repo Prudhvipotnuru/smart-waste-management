@@ -37,9 +37,10 @@ public class WasteController {
 	@GetMapping("/history")
 	private Page<WasteCollectionResponse> getWasteByCollectorIdAndCurrentDate(Authentication auth,@RequestParam(defaultValue = "0") 
 	int page,@RequestParam(defaultValue = "10")int size,@RequestParam(required = false) String status ,
-	@RequestParam(required=false) String date) throws BadRequestException{
+	@RequestParam(required=false) String date,
+	@RequestParam(required=false) Long collectorId) throws BadRequestException{
 		if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-			return service.getAllCollections(auth,page,size,status,date);
+			return service.getAllCollections(auth,page,size,status,date,collectorId);
 		}else if(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_COLLECTOR"))){
 			return service.getWasteByCollectorIdAndCurrentDate(auth, page, size, status, date);
 		}

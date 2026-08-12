@@ -3,6 +3,7 @@ package com.prudhvi.swacch.service;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -179,7 +180,7 @@ public class WasteService {
 
 	@PreAuthorize("hasRole('ROLE_ADMIN')")
 	public Page<WasteCollectionResponse> getAllCollections(Authentication auth, int page, int size, String status,
-			String date) throws BadRequestException {
+			String date, Long collectorId) throws BadRequestException {
 		PageRequest pageable=PageRequest.of(page, size);
 		Page<WasteCollection> wasteCollections;
 		boolean hasDate = date != null && !date.isBlank();
@@ -192,17 +193,36 @@ public class WasteService {
 			}
 			
 			if(hasDate) {
-				wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable,segStatus,
-						LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
-			}else {
-				wasteCollections = wrepo.findBySegregationStatus(pageable,segStatus);
+				LocalDateTime start = LocalDate.parse(date).atStartOfDay();
+				LocalDateTime end = LocalDate.parse(date).plusDays(1).atStartOfDay();
+				if (collectorId != null) {
+					wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(collectorId, pageable, segStatus, start, end);
+				} else {
+					wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable, segStatus, start, end);
+				}
+			} else {
+				if (collectorId != null) {
+					wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(collectorId, pageable, segStatus);
+				} else {
+					wasteCollections = wrepo.findBySegregationStatus(pageable, segStatus);
+				}
 			}
 		}
 		else {
 			if(hasDate) {
-				wasteCollections = wrepo.findByCollectedAtBetween(pageable,LocalDate.parse(date).atStartOfDay(),LocalDate.parse(date).plusDays(1).atStartOfDay());
-			}else {
-				wasteCollections = wrepo.findAll(pageable);
+				LocalDateTime start = LocalDate.parse(date).atStartOfDay();
+				LocalDateTime end = LocalDate.parse(date).plusDays(1).atStartOfDay();
+				if (collectorId != null) {
+					wasteCollections = wrepo.findByCollectorIdAndCollectedAtBetween(collectorId, pageable, start, end);
+				} else {
+					wasteCollections = wrepo.findByCollectedAtBetween(pageable, start, end);
+				}
+			} else {
+				if (collectorId != null) {
+					wasteCollections = wrepo.findByCollectorId(collectorId, pageable);
+				} else {
+					wasteCollections = wrepo.findAll(pageable);
+				}
 			}
 		}
 		return wasteCollections.map(this::processWasteResponse);
