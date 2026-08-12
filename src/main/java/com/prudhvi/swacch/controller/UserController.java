@@ -69,44 +69,46 @@ public class UserController {
 			HttpServletResponse response) {
 		ResponseEntity<Map<String, String>> status = UploadUtil.uploadProcess(file, jobOperator, collectorImportJob,
 				60);
-		Long jobExecutionId = 0L;
 		Map<String, String> body = status.getBody();
 		if (body != null && BatchStatus.COMPLETED.name().equals(body.get("jobExecution"))) {
-			jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
-			List<CollectorCredential> newCollectors = cRepo.findByJobExecutionId(jobExecutionId);
-			if (CollectionUtils.isEmpty(newCollectors)) {
-				return status;
-			}
-			ExecutorService executor = Executors.newFixedThreadPool(5);
-
-			long start = System.currentTimeMillis();
-			List<?> list = newCollectors.stream()
-					.map(c -> executor.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(),
-							c.getName(), c.getPassword())))
-					.toList();
-			int failures = 0;
-			for (Object f : list) {
-				try {
-					((Future<?>) f).get(30, TimeUnit.SECONDS); // surfaces exceptions, bounds wait time
-				} catch (ExecutionException e) {
-					failures++;
-					log.error("Failed to send credentials email", e.getCause());
-				} catch (TimeoutException e) {
-					failures++;
-					log.error("Timed out sending credentials email", e);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					log.error("Interrupted while sending emails", e);
-					break;
+			Long jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
+			try {
+				List<CollectorCredential> newCollectors = cRepo.findByJobExecutionId(jobExecutionId);
+				if (!CollectionUtils.isEmpty(newCollectors)) {
+					ExecutorService executor = Executors.newFixedThreadPool(5);
+					try {
+						long start = System.currentTimeMillis();
+						List<?> list = newCollectors.stream()
+								.map(c -> executor.submit(() -> notificationService.sendCollectorCredentials(c.getEmail(),
+										c.getName(), c.getPassword())))
+								.toList();
+						int failures = 0;
+						for (Object f : list) {
+							try {
+								((Future<?>) f).get(30, TimeUnit.SECONDS); // surfaces exceptions, bounds wait time
+							} catch (ExecutionException e) {
+								failures++;
+								log.error("Failed to send credentials email", e.getCause());
+							} catch (TimeoutException e) {
+								failures++;
+								log.error("Timed out sending credentials email", e);
+							} catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+								log.error("Interrupted while sending emails", e);
+								break;
+							}
+						}
+						long end = System.currentTimeMillis();
+						log.info("{} ms total time to send mails to {} collectors ({} failures)",
+								(end - start), newCollectors.size(), failures);
+					} finally {
+						executor.shutdown();
+					}
 				}
+			} finally {
+				cRepo.deleteByJobExecutionId(jobExecutionId);
 			}
-			long end = System.currentTimeMillis();
-			log.info("{} ms total time to send mails to {} collectors ({} failures)",
-					(end - start), newCollectors.size(), failures);
-
-			executor.shutdown();
 		}
-		cRepo.deleteByJobExecutionId(jobExecutionId);
 		return status;
 	}
 

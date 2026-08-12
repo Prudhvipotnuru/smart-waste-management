@@ -2,6 +2,7 @@ package com.prudhvi.swacch.utils;
 
 import java.io.File;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,61 +16,63 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 public class UploadUtil {
-	
+
 	public static final Logger logger = LoggerFactory.getLogger(UploadUtil.class);
-	
-	public static ResponseEntity<Map<String, String>> uploadProcess(MultipartFile file,JobOperator jobOperator,
-			Job job,long headerLength) {
+
+	public static ResponseEntity<Map<String, String>> uploadProcess(MultipartFile file, JobOperator jobOperator,
+			Job job, long headerLength) {
 		try {
-	    	if (!file.getOriginalFilename().endsWith(".csv")) {
-	    	    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("status", "FAILED", "error", "Only CSV allowed"));
-	    	}
-	        // Absolute path (inside project folder or anywhere you like)
-	        String uploadDir = System.getProperty("user.dir") + "/uploads";
+			if (!file.getOriginalFilename().endsWith(".csv")) {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
+						.body(Map.of("status", "FAILED", "error", "Only CSV allowed"));
+			}
+			// Absolute path (inside project folder or anywhere you like)
+			String uploadDir = System.getProperty("user.dir") + "/uploads";
 
-	        // Create folder if it doesn't exist
-	        File dir = new File(uploadDir);
-	        if (!dir.exists()) {
-	            dir.mkdirs(); // ✅ this creates uploads folder
-	        }
+			// Create folder if it doesn't exist
+			File dir = new File(uploadDir);
+			if (!dir.exists()) {
+				dir.mkdirs(); // ✅ this creates uploads folder
+			}
 
-	        // Save file
-	        File dest = new File(dir, file.getOriginalFilename());
-	        file.transferTo(dest);
+			// Save file
+			String uniqueFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+			File dest = new File(dir, uniqueFileName);
 
-	        logger.debug("Saved file to: " + dest.getAbsolutePath());
+			file.transferTo(dest);
 
-	        // Trigger Spring Batch job
-	        JobParameters params = new JobParametersBuilder()
-	        		.addLong("jobExecutionId",System.currentTimeMillis())
-	                .addString("filePath", dest.getAbsolutePath())
-	                .addLong("time", System.currentTimeMillis())
-	                .toJobParameters();
+			logger.debug("Saved file to: " + dest.getAbsolutePath());
 
-	        JobExecution jobExecution = jobOperator.start(job, params);
-	        logger.debug(jobExecution.toString() +" Job status = " + jobExecution.getStatus());
-	        
-	        File errorFile = new File(uploadDir + "/error_records.csv");
-	        if (errorFile.exists() && errorFile.length() > headerLength) {
-	            return ResponseEntity.ok(
-	                    Map.of(
-	                            "status", "COMPLETED_WITH_ERRORS",
-	                            "downloadUrl", "/download-errors",
-	                            "jobExecution",jobExecution.getStatus().name(),
-		                		"jobExecutionId",String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId"))
-	                    )
-	            );
-	        }
+			// Trigger Spring Batch job
+			JobParameters params = new JobParametersBuilder()
+					.addLong("jobExecutionId", System.currentTimeMillis())
+					.addString("filePath", dest.getAbsolutePath())
+					.addLong("time", System.currentTimeMillis())
+					.toJobParameters();
 
-	        return ResponseEntity.ok(
-	                Map.of("status", "SUCCESS",
-	                		"jobExecution",jobExecution.getStatus().name(),
-	                		"jobExecutionId",String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId")))
-	        );
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	        		.body(Map.of("status", "FAILED", "error", e.getMessage()));
-	    }
+			JobExecution jobExecution = jobOperator.start(job, params);
+			logger.debug(jobExecution.toString() + " Job status = " + jobExecution.getStatus());
+
+			File errorFile = new File(uploadDir + "/error_records.csv");
+			if (errorFile.exists() && errorFile.length() > headerLength) {
+				return ResponseEntity.ok(
+						Map.of(
+								"status", "COMPLETED_WITH_ERRORS",
+								"downloadUrl", "/download-errors",
+								"jobExecution", jobExecution.getStatus().name(),
+								"jobExecutionId",
+								String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId"))));
+			}
+
+			return ResponseEntity.ok(
+					Map.of("status", "SUCCESS",
+							"jobExecution", jobExecution.getStatus().name(),
+							"jobExecutionId",
+							String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId"))));
+		} catch (Exception e) {
+			logger.error("Upload process failed", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("status", "FAILED", "error", e.getMessage()));
+		}
 	}
 }
