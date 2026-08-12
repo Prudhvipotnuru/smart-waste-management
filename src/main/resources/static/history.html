@@ -216,6 +216,7 @@ img {
         <thead>
             <tr>
                 <th>House</th>
+                <th id="collectorHeader" style="display: none;">Collector</th>
                 <th>
                 <select id="statusFilter" onchange="onStatusChange(this.value)">
                 	<option value="">Status</option>
@@ -267,10 +268,14 @@ if (isAdmin) {
     const navItem = document.getElementById("navItem");
     const collNavItem = document.getElementById("collNavItem");
     const title = document.getElementById("title");
+    const collectorHeader = document.getElementById("collectorHeader");
     navItem.setAttribute("href","/createHouse.html");
-    navItem.innerText="Home"
+    navItem.innerText="Home";
     collNavItem.innerText="All Collections";
     title.innerText="All Collections";
+    if (collectorHeader) {
+        collectorHeader.style.display = "";
+    }
     if(localStorage.getItem("currentStatus")!=null)
     	currentStatus=localStorage.getItem("currentStatus");
 }
@@ -303,9 +308,13 @@ async function loadData() {
         }
 
         data.forEach(item => {
+            const collectorTd = isAdmin 
+                ? `<td>${item.collectorName ? item.collectorName : 'N/A'}</td>` 
+                : '';
             const row = `
                 <tr>
                     <td>${item.houseNumber}</td>
+                    ${collectorTd}
                     <td class="${item.segregationStatus === 'SEGREGATED' ? 'seg' : 'non-seg'}">
                         ${item.segregationStatus}
                     </td>
