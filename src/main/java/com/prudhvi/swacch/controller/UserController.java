@@ -69,9 +69,10 @@ public class UserController {
 			HttpServletResponse response) {
 		ResponseEntity<Map<String, String>> status = UploadUtil.uploadProcess(file, jobOperator, collectorImportJob,
 				60);
+		Long jobExecutionId = 0L;
 		Map<String, String> body = status.getBody();
 		if (body != null && BatchStatus.COMPLETED.name().equals(body.get("jobExecution"))) {
-			Long jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
+			jobExecutionId = Long.valueOf(body.get("jobExecutionId"));
 			List<CollectorCredential> newCollectors = cRepo.findByJobExecutionId(jobExecutionId);
 			if (CollectionUtils.isEmpty(newCollectors)) {
 				return status;
@@ -105,7 +106,7 @@ public class UserController {
 
 			executor.shutdown();
 		}
-		cRepo.deleteAll();
+		cRepo.deleteByJobExecutionId(jobExecutionId);
 		return status;
 	}
 
