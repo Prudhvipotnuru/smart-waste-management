@@ -3,7 +3,6 @@ package com.prudhvi.swacch.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.coyote.BadRequestException;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,21 +30,23 @@ public class HouseController {
 	private JobOperator jobOperator;
 
 	private Job houseImportjob;
-	
-	public HouseController(HouseService service, JobOperator jobOperator,@Qualifier("houseImportJob") Job houseImportjob) {
+
+	public HouseController(HouseService service, JobOperator jobOperator,
+			@Qualifier("houseImportJob") Job houseImportjob) {
 		this.service = service;
 		this.houseImportjob = houseImportjob;
 		this.jobOperator = jobOperator;
 	}
 
 	@PostMapping("/admin/upload")
-	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
-	    return UploadUtil.uploadProcess(file, jobOperator, houseImportjob, 59);
+	public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file,
+			HttpServletResponse response) {
+		return UploadUtil.uploadProcess(file, jobOperator, houseImportjob, 59);
 	}
 
 	@GetMapping("/download-errors")
-	public ResponseEntity<?> downloadErrors(HttpServletResponse response) throws BadRequestException {
-	    return service.downloadErrors(response);
+	public ResponseEntity<?> downloadErrors(HttpServletResponse response) {
+		return service.downloadErrors(response);
 	}
 
 	@PostMapping("/admin/saveHouse")
