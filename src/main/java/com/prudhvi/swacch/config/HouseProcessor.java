@@ -1,29 +1,17 @@
 package com.prudhvi.swacch.config;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.jspecify.annotations.Nullable;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.prudhvi.swacch.model.House;
-import com.prudhvi.swacch.repos.HouseRepo;
 
 public class HouseProcessor implements ItemProcessor<House, House>{
-	
-	@Autowired
-	private HouseRepo hrepo;
-
 	@Override
 	public @Nullable House process(House house) throws Exception {
 		StringBuilder errors = new StringBuilder();
-		Set<String> existingHouseNumbers = new HashSet<>(hrepo.findAllHouseNumbers());
 
         if (house.getHouseNumber() == null || house.getHouseNumber().isEmpty()) {
             errors.append("House Number is missing; ");
-        }else if(existingHouseNumbers.contains(house.getHouseNumber())) {
-        	errors.append("House with this house number already exists");
         }
         if (house.getOwnerName() == null || house.getOwnerName().isEmpty()) {
             errors.append("Owner Name is missing; ");
