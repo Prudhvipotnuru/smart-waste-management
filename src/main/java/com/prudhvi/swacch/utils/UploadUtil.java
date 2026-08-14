@@ -1,9 +1,18 @@
 package com.prudhvi.swacch.utils;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.job.Job;
@@ -21,37 +30,45 @@ public class UploadUtil {
 
 	public static ResponseEntity<Map<String, String>> uploadProcess(MultipartFile file, JobOperator jobOperator,
 			Job job, long headerLength) {
+		File batchCsvFile=null;
 		try {
-			if (!file.getOriginalFilename().endsWith(".csv")) {
-				return ResponseEntity.status(HttpStatus.CONFLICT)
-						.body(Map.of("status", "FAILED", "error", "Only CSV allowed"));
-			}
-			// Absolute path (inside project folder or anywhere you like)
-			String uploadDir = System.getProperty("user.dir") + "/uploads";
+			String fileName = file.getOriginalFilename();
+			boolean isCsv = fileName != null && fileName.endsWith(".csv");
+			boolean isExcel = fileName != null && (fileName.endsWith(".xlsx") || fileName.endsWith(".xls"));
 
-			// Create folder if it doesn't exist
+			if (!isCsv && !isExcel) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body(Map.of("status", "FAILED", "error", "Only CSV or Excel (.xlsx/.xls) files allowed"));
+			}
+
+			String uploadDir = System.getProperty("user.dir") + "/uploads";
 			File dir = new File(uploadDir);
 			if (!dir.exists()) {
-				dir.mkdirs(); // ✅ this creates uploads folder
+				dir.mkdirs();
 			}
 
-			// Save file
-			String uniqueFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-			File dest = new File(dir, uniqueFileName);
+			// Determine final CSV path for the batch job
+			if (isCsv) {
+				batchCsvFile = new File(dir, UUID.randomUUID() + "_" + fileName);
+				file.transferTo(batchCsvFile);
+				logger.debug("Saved CSV to: " + batchCsvFile.getAbsolutePath());
+			} else {
+				// Convert Excel → CSV
+				batchCsvFile = new File(dir, UUID.randomUUID() + "_converted.csv");
+				convertExcelToCsv(file, batchCsvFile);
+				logger.debug("Converted Excel to CSV: " + batchCsvFile.getAbsolutePath());
+			}
 
-			file.transferTo(dest);
-
-			logger.debug("Saved file to: " + dest.getAbsolutePath());
-
-			// Trigger Spring Batch job
+			// Trigger Spring Batch job with the CSV path
+			long now = System.currentTimeMillis();
 			JobParameters params = new JobParametersBuilder()
-					.addLong("jobExecutionId", System.currentTimeMillis())
-					.addString("filePath", dest.getAbsolutePath())
-					.addLong("time", System.currentTimeMillis())
+					.addLong("jobExecutionId", now)
+					.addString("filePath", batchCsvFile.getAbsolutePath())
+					.addLong("time", now)
 					.toJobParameters();
 
 			JobExecution jobExecution = jobOperator.start(job, params);
-			logger.debug(jobExecution.toString() + " Job status = " + jobExecution.getStatus());
+			logger.debug(jobExecution + " Job status = " + jobExecution.getStatus());
 
 			File errorFile = new File(uploadDir + "/error_records.csv");
 			if (errorFile.exists() && errorFile.length() > headerLength) {
@@ -69,10 +86,49 @@ public class UploadUtil {
 							"jobExecution", jobExecution.getStatus().name(),
 							"jobExecutionId",
 							String.valueOf(jobExecution.getJobParameters().getLong("jobExecutionId"))));
+
 		} catch (Exception e) {
 			logger.error("Upload process failed", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("status", "FAILED", "error", e.getMessage()));
+					.body(Map.of("status", "FAILED", "error", e.getMessage()!=null?e.getMessage():e.getClass().getSimpleName()));
+		} finally {
+	        if (batchCsvFile != null && batchCsvFile.exists()) {
+	            boolean deleted = batchCsvFile.delete();
+	            if (!deleted) {
+	                logger.warn("Failed to delete temp file: " + batchCsvFile.getAbsolutePath());
+	            } else {
+	                logger.debug("Deleted temp file: " + batchCsvFile.getAbsolutePath());
+	            }
+	        }
+	    }
+	}
+
+	/**
+	 * Converts an Excel file (.xlsx or .xls) to CSV using Apache POI.
+	 * Reads the first sheet only. Commas within cell values are replaced with
+	 * spaces.
+	 */
+	private static void convertExcelToCsv(MultipartFile excelFile, File csvOutput) throws Exception {
+		try (Workbook workbook = WorkbookFactory.create(excelFile.getInputStream());
+				PrintWriter writer = new PrintWriter(new FileWriter(csvOutput,StandardCharsets.UTF_8))) {
+
+			Sheet sheet = workbook.getSheetAt(0);
+			DataFormatter formatter = new DataFormatter();
+
+			for (Row row : sheet) {
+				int lastCell = row.getLastCellNum();
+				if(row==null || row.getLastCellNum()<=0) continue;
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < lastCell; i++) {
+					Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+					// Replace commas inside cell values to avoid CSV corruption
+					String value = formatter.formatCellValue(cell).replace(",", " ");
+					sb.append(value);
+					if (i < lastCell - 1)
+						sb.append(",");
+				}
+				writer.println(sb);
+			}
 		}
 	}
 }
