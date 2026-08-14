@@ -55,8 +55,8 @@ public class HouseController {
 	}
 
 	@GetMapping("/admin/houses")
-	private List<HouseResponse> getAllHouses() {
-		return service.getAllHouses();
+	private List<HouseResponse> getAllHouses(@RequestParam int page,@RequestParam int size) {
+		return service.getAllHouses(page,size);
 	}
 
 	@GetMapping("/houses/{id}")

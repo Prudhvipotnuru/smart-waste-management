@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -39,8 +41,9 @@ public class HouseService {
 		return response;
 	}
 
-	public List<HouseResponse> getAllHouses() {
-		List<House> houses = repo.findAll();
+	public List<HouseResponse> getAllHouses(int page, int size) {
+		PageRequest pr = PageRequest.of(page-1, size);
+		Page<House> houses = repo.findAll(pr);
 		List<HouseResponse> response = new ArrayList<HouseResponse>();
 		for (House house : houses) {
 			HouseResponse resp = new HouseResponse();
