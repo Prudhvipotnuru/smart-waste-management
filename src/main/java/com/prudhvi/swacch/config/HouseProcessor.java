@@ -4,14 +4,25 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 
 import com.prudhvi.swacch.model.House;
+import com.prudhvi.swacch.repos.HouseRepo;
 
 public class HouseProcessor implements ItemProcessor<House, House>{
+	
+	private final HouseRepo hrepo;
+	public HouseProcessor(HouseRepo hrepo) {
+		this.hrepo=hrepo;
+	}
+	
 	@Override
 	public @Nullable House process(House house) throws Exception {
 		StringBuilder errors = new StringBuilder();
 
         if (house.getHouseNumber() == null || house.getHouseNumber().isEmpty()) {
             errors.append("House Number is missing; ");
+        } else {
+        	if(hrepo.existsByHouseNumber(house.getHouseNumber())) {
+        		errors.append("House Number already exists");
+        	}
         }
         if (house.getOwnerName() == null || house.getOwnerName().isEmpty()) {
             errors.append("Owner Name is missing; ");

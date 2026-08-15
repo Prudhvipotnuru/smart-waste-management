@@ -80,7 +80,7 @@ public class BatchConfig {
 	//processor
 	@Bean
 	public HouseProcessor processor() {
-		return new HouseProcessor();
+		return new HouseProcessor(hRepo);
 	}
 	
 	//writer
