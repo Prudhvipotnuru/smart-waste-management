@@ -125,7 +125,7 @@ public class BatchConfig {
 	public Step housesStep(JobRepository jobRepository,FlatFileItemReader<House> reader,HouseProcessor processor,
 			ClassifierCompositeItemWriter<House> writer,FlatFileItemWriter<House> errorWriter) throws IOException {
 		return new StepBuilder(jobRepository)
-			    .<House, House>chunk(100)
+			    .<House, House>chunk(500)
 			    .reader(reader)
 			    .processor(processor)
 			    .writer(writer)
