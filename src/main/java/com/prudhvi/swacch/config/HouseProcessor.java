@@ -1,16 +1,27 @@
 package com.prudhvi.swacch.config;
 
+import java.util.Set;
+
 import org.jspecify.annotations.Nullable;
+import org.springframework.batch.infrastructure.item.ExecutionContext;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemStream;
 
 import com.prudhvi.swacch.model.House;
 import com.prudhvi.swacch.repos.HouseRepo;
 
-public class HouseProcessor implements ItemProcessor<House, House>{
+public class HouseProcessor implements ItemProcessor<House, House>,ItemStream{
 	
 	private final HouseRepo hrepo;
+	private Set<String> existingHouseNumbers;
+	
 	public HouseProcessor(HouseRepo hrepo) {
 		this.hrepo=hrepo;
+	}
+	
+	@Override
+	public void open(ExecutionContext context) {
+		existingHouseNumbers=hrepo.findAllHouseNumbers();
 	}
 	
 	@Override
@@ -20,7 +31,7 @@ public class HouseProcessor implements ItemProcessor<House, House>{
         if (house.getHouseNumber() == null || house.getHouseNumber().isEmpty()) {
             errors.append("House Number is missing; ");
         } else {
-        	if(hrepo.existsByHouseNumber(house.getHouseNumber())) {
+        	if(existingHouseNumbers.contains(house.getHouseNumber())) {
         		errors.append("House Number already exists");
         	}
         }
