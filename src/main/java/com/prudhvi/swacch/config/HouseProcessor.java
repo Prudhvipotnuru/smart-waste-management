@@ -35,6 +35,9 @@ public class HouseProcessor implements ItemProcessor<House, House>,ItemStream{
         		errors.append("House Number already exists");
         	}
         }
+        if (!existingHouseNumbers.add(house.getHouseNumber())) {
+            errors.append("House Number already exists in this upload; ");
+        }
         if (house.getOwnerName() == null || house.getOwnerName().isEmpty()) {
             errors.append("Owner Name is missing; ");
         }
