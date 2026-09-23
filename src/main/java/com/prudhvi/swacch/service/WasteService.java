@@ -1,10 +1,9 @@
 package com.prudhvi.swacch.service;
 
-import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -35,11 +34,13 @@ public class WasteService {
 	private WasteCollectionRepo wrepo;
 	private UserRepo urepo;
 	private HouseRepo hrepo;
+	private PixelBinService pixelBin;
 
-	WasteService(WasteCollectionRepo repo, UserRepo urepo, HouseRepo hrepo) {
+	WasteService(WasteCollectionRepo repo, UserRepo urepo, HouseRepo hrepo, PixelBinService pixelBin) {
 		this.wrepo = repo;
 		this.urepo = urepo;
 		this.hrepo = hrepo;
+		this.pixelBin = pixelBin;
 	}
 
 	private List<WasteCollectionResponse> processWasteList(List<WasteCollection> list) {
@@ -81,39 +82,47 @@ public class WasteService {
 
 		waste.setHouse(house);
 
-		// Optional: save photo if provided
+		// Optional: upload photo to PixelBin if provided
 		if (request.getPhotoPath() != null && !request.getPhotoPath().isEmpty()) {
-			String savedPath = savePhoto(request.getPhotoPath(), house.getId());
-			waste.setPhotoPath(savedPath);
+			waste.setPhotoPath(uploadPhoto(request.getPhotoPath(), house.getId()));
 		}
 
 		WasteCollection resp = wrepo.save(waste);
 		return processWasteResponse(resp);
 	}
 
-	private String savePhoto(String base64Photo, Long houseId) {
-		// Remove "data:image/png;base64," prefix if exists
-		if (base64Photo.contains(",")) {
-			base64Photo = base64Photo.split(",")[1];
+	/**
+	 * Uploads the base64 photo submitted by the collector to PixelBin and
+	 * returns the public CDN url that is stored in the database (instead of
+	 * a local /uploads/photos path on the server's file system).
+	 */
+	private String uploadPhoto(String base64Photo, Long houseId) {
+		String contentType = "image/png";
+		String base64Data = base64Photo;
+
+		// Parse optional "data:<mime>;base64," prefix sent by the collector app
+		if (base64Photo.startsWith("data:")) {
+			int comma = base64Photo.indexOf(',');
+			String meta = comma >= 0 ? base64Photo.substring(0, comma) : "";
+			int semicolon = meta.indexOf(';');
+			if (meta.length() > 5) {
+				contentType = meta.substring(5, semicolon < 0 ? meta.length() : semicolon);
+			}
+			if (comma >= 0) {
+				base64Data = base64Photo.substring(comma + 1);
+			}
 		}
 
-		byte[] data = java.util.Base64.getDecoder().decode(base64Photo);
+		byte[] data = Base64.getDecoder().decode(base64Data);
 
-		String dirPath = System.getProperty("user.dir") + "/uploads/photos";
-		File dir = new File(dirPath);
-		if (!dir.exists())
-			dir.mkdirs();
-
-		String fileName = "house_" + houseId + "_" + System.currentTimeMillis() + ".png";
-		File file = new File(dir, fileName);
-
-		try {
-			java.nio.file.Files.write(file.toPath(), data);
-		} catch (IOException e) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to save Photo", e);
+		String extension = "png";
+		int slash = contentType.indexOf('/');
+		if (slash >= 0 && contentType.length() > slash + 1) {
+			extension = contentType.substring(slash + 1);
 		}
+		String filename = "house_" + houseId + "_" + System.currentTimeMillis() + "." + extension;
 
-		return "/uploads/photos/" + fileName; // can be used in frontend to show image
+		return pixelBin.upload(data, filename, contentType);
 	}
 
 	public List<WasteCollectionResponse> getAll() {
@@ -198,10 +207,10 @@ public class WasteService {
 				if (collectorId != null) {
 					wasteCollections = wrepo.findByCollectorIdAndSegregationStatusAndCollectedAtBetween(collectorId,
 							pageable, segStatus, start, end);
-				} else {
-					wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable, segStatus, start,
-							end);
-				}
+					} else {
+						wasteCollections = wrepo.findBySegregationStatusAndCollectedAtBetween(pageable, segStatus, start,
+								end);
+					}
 			} else {
 				if (collectorId != null) {
 					wasteCollections = wrepo.findByCollectorIdAndSegregationStatus(collectorId, pageable, segStatus);
