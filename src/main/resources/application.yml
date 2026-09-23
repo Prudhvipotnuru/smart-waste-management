@@ -24,8 +24,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: prudhvipotnuru11@gmail.com
-    password: tpfkveglrinwqmkk
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -50,4 +50,4 @@ swacch:
   render-link: ${SWACCH_RENDER_LINK}
 jwt:
   secret: ${JWT_SECRET_KEY}
-  expiration: 600000
+  expiration: 600000000

@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import com.prudhvi.swacch.dtos.WasteCollectionResponse;
 import com.prudhvi.swacch.service.WasteService;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 public class WasteController {
 
 	private WasteService service;
