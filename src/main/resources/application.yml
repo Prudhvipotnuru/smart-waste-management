@@ -46,6 +46,9 @@ logging:
         swacch: DEBUG
 sendgrid:
   api-key: ${SENDGRID_API_KEY}
+pixelbin:
+  api-token: ${PIXELBIN_API_TOKEN}
+  folder: swacch/waste-photos
 swacch:
   render-link: ${SWACCH_RENDER_LINK}
 jwt:
