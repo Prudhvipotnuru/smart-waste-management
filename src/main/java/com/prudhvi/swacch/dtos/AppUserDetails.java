@@ -56,4 +56,8 @@ public class AppUserDetails implements UserDetails{
 	public Boolean isPasswordChanged() {
 		return passwordChanged;
 	}
+
+	public Long getUserId() {
+		return userId;
+	}
 }
