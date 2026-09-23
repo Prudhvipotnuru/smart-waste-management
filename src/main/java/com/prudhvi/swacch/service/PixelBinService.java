@@ -1,7 +1,9 @@
 package com.prudhvi.swacch.service;
 
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -84,9 +86,14 @@ public class PixelBinService {
 		body.add("filenameOverride", "true");
 
 		try {
+			// PixelBin requires the API token to be base64 encoded in the
+			// Authorization header: "Bearer <base64(apiToken)>"
+			String encodedToken = Base64.getEncoder()
+					.encodeToString(apiToken.getBytes(StandardCharsets.UTF_8));
+
 			Map<String, Object> response = restClient.post()
 					.uri(UPLOAD_URL)
-					.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+					.header(HttpHeaders.AUTHORIZATION, "Bearer " + encodedToken)
 					.contentType(MediaType.MULTIPART_FORM_DATA)
 					.body(body)
 					.retrieve()
