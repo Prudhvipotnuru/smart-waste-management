@@ -49,11 +49,11 @@ public class PixelBinService {
 
 	private final RestClient restClient;
 
-	public PixelBinService(RestClient.Builder builder) {
+	public PixelBinService() {
 		JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
 				HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
 		requestFactory.setReadTimeout(Duration.ofSeconds(60));
-		this.restClient = builder.requestFactory(requestFactory).build();
+		this.restClient = RestClient.builder().requestFactory(requestFactory).build();
 	}
 
 	/**
