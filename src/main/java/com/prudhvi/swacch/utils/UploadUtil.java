@@ -122,7 +122,10 @@ public class UploadUtil {
 				for (int i = 0; i < lastCell; i++) {
 					Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
 					// Replace commas inside cell values to avoid CSV corruption
-					String value = formatter.formatCellValue(cell).replace(",", " ");
+					String value = formatter.formatCellValue(cell);
+					if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+					    value = "\"" + value.replace("\"", "\"\"") + "\"";
+					}
 					sb.append(value);
 					if (i < lastCell - 1)
 						sb.append(",");
